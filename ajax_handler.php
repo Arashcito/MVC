@@ -55,8 +55,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         case 'delete_email':
             $response = deleteEmail($pdo, $_POST['emailID']);
             break;
+        case 'delete_postalarea':
+            $response = deletePostalArea($pdo, $_POST['postalCode']);
+            break;
+        case 'delete_locationphone':
+            $response = deleteLocationPhone($pdo, $_POST['locationID'], $_POST['phone']);
+            break;
+        case 'delete_familyhistory':
+            $response = deleteFamilyHistory($pdo, $_POST['memberID'], $_POST['familyMemID'], $_POST['startDate']);
+            break;
+        case 'delete_teammember':
+            $response = deleteTeamMember($pdo, $_POST['teamID'], $_POST['memberID']);
+            break;
         case 'get_location':
             $response = getLocation($pdo, $_POST['id']);
+            break;
+        case 'get_postalarea':
+            $response = getPostalArea($pdo, $_POST['postalCode']);
+            break;
+        case 'get_locationphone':
+            $response = getLocationPhone($pdo, $_POST['locationID'], $_POST['phone']);
+            break;
+        case 'get_familyhistory':
+            $response = getFamilyHistoryById($pdo, $_POST['memberID'], $_POST['familyMemID'], $_POST['startDate']);
+            break;
+        case 'get_teammember':
+            $response = getTeamMemberById($pdo, $_POST['teamID'], $_POST['memberID']);
             break;
         case 'get_personnel':
             $response = getPersonnelById($pdo, $_POST['id']);
@@ -204,6 +228,46 @@ function deleteEmail($pdo, $emailID) {
     }
 }
 
+function deletePostalArea($pdo, $postalCode) {
+    try {
+        $stmt = $pdo->prepare("DELETE FROM PostalAreaInfo WHERE postalCode = ?");
+        $stmt->execute([$postalCode]);
+        return ['success' => true, 'message' => 'Postal area deleted successfully'];
+    } catch (PDOException $e) {
+        return ['success' => false, 'message' => 'Failed to delete postal area: ' . $e->getMessage()];
+    }
+}
+
+function deleteLocationPhone($pdo, $locationID, $phone) {
+    try {
+        $stmt = $pdo->prepare("DELETE FROM LocationPhone WHERE locationID = ? AND phone = ?");
+        $stmt->execute([$locationID, $phone]);
+        return ['success' => true, 'message' => 'Location phone deleted successfully'];
+    } catch (PDOException $e) {
+        return ['success' => false, 'message' => 'Failed to delete location phone: ' . $e->getMessage()];
+    }
+}
+
+function deleteFamilyHistory($pdo, $memberID, $familyMemID, $startDate) {
+    try {
+        $stmt = $pdo->prepare("DELETE FROM FamilyHistory WHERE memberID = ? AND familyMemID = ? AND startDate = ?");
+        $stmt->execute([$memberID, $familyMemID, $startDate]);
+        return ['success' => true, 'message' => 'Family history deleted successfully'];
+    } catch (PDOException $e) {
+        return ['success' => false, 'message' => 'Failed to delete family history: ' . $e->getMessage()];
+    }
+}
+
+function deleteTeamMember($pdo, $teamID, $memberID) {
+    try {
+        $stmt = $pdo->prepare("DELETE FROM TeamMember WHERE teamID = ? AND memberID = ?");
+        $stmt->execute([$teamID, $memberID]);
+        return ['success' => true, 'message' => 'Team member deleted successfully'];
+    } catch (PDOException $e) {
+        return ['success' => false, 'message' => 'Failed to delete team member: ' . $e->getMessage()];
+    }
+}
+
 // Get functions for editing
 function getLocation($pdo, $id) {
     try {
@@ -213,6 +277,50 @@ function getLocation($pdo, $id) {
         return ['success' => true, 'data' => $location];
     } catch (PDOException $e) {
         return ['success' => false, 'message' => 'Failed to get location: ' . $e->getMessage()];
+    }
+}
+
+function getPostalArea($pdo, $postalCode) {
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM PostalAreaInfo WHERE postalCode = ?");
+        $stmt->execute([$postalCode]);
+        $postalArea = $stmt->fetch(PDO::FETCH_ASSOC);
+        return ['success' => true, 'data' => $postalArea];
+    } catch (PDOException $e) {
+        return ['success' => false, 'message' => 'Failed to get postal area: ' . $e->getMessage()];
+    }
+}
+
+function getLocationPhone($pdo, $locationID, $phone) {
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM LocationPhone WHERE locationID = ? AND phone = ?");
+        $stmt->execute([$locationID, $phone]);
+        $locationPhone = $stmt->fetch(PDO::FETCH_ASSOC);
+        return ['success' => true, 'data' => $locationPhone];
+    } catch (PDOException $e) {
+        return ['success' => false, 'message' => 'Failed to get location phone: ' . $e->getMessage()];
+    }
+}
+
+function getFamilyHistoryById($pdo, $memberID, $familyMemID, $startDate) {
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM FamilyHistory WHERE memberID = ? AND familyMemID = ? AND startDate = ?");
+        $stmt->execute([$memberID, $familyMemID, $startDate]);
+        $familyHistory = $stmt->fetch(PDO::FETCH_ASSOC);
+        return ['success' => true, 'data' => $familyHistory];
+    } catch (PDOException $e) {
+        return ['success' => false, 'message' => 'Failed to get family history: ' . $e->getMessage()];
+    }
+}
+
+function getTeamMemberById($pdo, $teamID, $memberID) {
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM TeamMember WHERE teamID = ? AND memberID = ?");
+        $stmt->execute([$teamID, $memberID]);
+        $teamMember = $stmt->fetch(PDO::FETCH_ASSOC);
+        return ['success' => true, 'data' => $teamMember];
+    } catch (PDOException $e) {
+        return ['success' => false, 'message' => 'Failed to get team member: ' . $e->getMessage()];
     }
 }
 

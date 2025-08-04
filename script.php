@@ -177,6 +177,75 @@
         });
     }
 
+    // New edit functions for additional tables
+    function editPostalArea(postalCode) {
+        fetch('ajax_handler.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: 'action=get_postalarea&postalCode=' + encodeURIComponent(postalCode)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                populatePostalAreaForm(data.data);
+                openModal('postalAreaModal');
+            } else {
+                alert('Error: ' + data.message);
+            }
+        });
+    }
+
+    function editLocationPhone(locationID, phone) {
+        fetch('ajax_handler.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: 'action=get_locationphone&locationID=' + locationID + '&phone=' + encodeURIComponent(phone)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                populateLocationPhoneForm(data.data);
+                openModal('locationPhoneModal');
+            } else {
+                alert('Error: ' + data.message);
+            }
+        });
+    }
+
+    function editFamilyHistory(memberID, familyMemID, startDate) {
+        fetch('ajax_handler.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: 'action=get_familyhistory&memberID=' + memberID + '&familyMemID=' + familyMemID + '&startDate=' + encodeURIComponent(startDate)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                populateFamilyHistoryForm(data.data);
+                openModal('familyHistoryModal');
+            } else {
+                alert('Error: ' + data.message);
+            }
+        });
+    }
+
+    function editTeamMember(teamID, memberID, roleInTeam) {
+        fetch('ajax_handler.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: 'action=get_teammember&teamID=' + teamID + '&memberID=' + memberID + '&roleInTeam=' + encodeURIComponent(roleInTeam)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                populateTeamMemberForm(data.data);
+                openModal('teamMemberModal');
+            } else {
+                alert('Error: ' + data.message);
+            }
+        });
+    }
+
     // Delete functions
     function deleteLocation(id) {
         if (confirm('Are you sure you want to delete this location?')) {
@@ -349,6 +418,83 @@
         }
     }
 
+    // New delete functions for additional tables
+    function deletePostalArea(postalCode) {
+        if (confirm('Are you sure you want to delete this postal area?')) {
+            fetch('ajax_handler.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'action=delete_postalarea&postalCode=' + encodeURIComponent(postalCode)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Postal area deleted successfully');
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            });
+        }
+    }
+
+    function deleteLocationPhone(locationID, phone) {
+        if (confirm('Are you sure you want to delete this location phone?')) {
+            fetch('ajax_handler.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'action=delete_locationphone&locationID=' + locationID + '&phone=' + encodeURIComponent(phone)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Location phone deleted successfully');
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            });
+        }
+    }
+
+    function deleteFamilyHistory(memberID, familyMemID, startDate) {
+        if (confirm('Are you sure you want to delete this family history record?')) {
+            fetch('ajax_handler.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'action=delete_familyhistory&memberID=' + memberID + '&familyMemID=' + familyMemID + '&startDate=' + encodeURIComponent(startDate)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Family history record deleted successfully');
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            });
+        }
+    }
+
+    function deleteTeamMember(teamID, memberID) {
+        if (confirm('Are you sure you want to remove this member from the team?')) {
+            fetch('ajax_handler.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'action=delete_teammember&teamID=' + teamID + '&memberID=' + memberID
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Team member removed successfully');
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            });
+        }
+    }
+
     function removeMemberHobby(memberID, hobbyName) {
         if (confirm('Are you sure you want to remove this hobby from the member?')) {
             fetch('ajax_handler.php', {
@@ -454,17 +600,27 @@
     }
 
     function populatePaymentForm(data) {
-        document.querySelector('select[name="memberID"]').value = data.memberID || '';
+        document.querySelector('select[name="member_id"]').value = data.memberID || '';
         document.querySelector('input[name="amount"]').value = data.amount || '';
-        document.querySelector('select[name="method"]').value = data.method || '';
+        document.querySelector('select[name="payment_method"]').value = data.method || '';
         document.querySelector('input[name="payment_date"]').value = data.paymentDate || '';
-        document.querySelector('input[name="membership_year"]').value = data.membershipYear || '';
+        document.querySelector('select[name="year"]').value = data.membershipYear || '';
+        
+        // Add hidden field for paymentID when editing
+        let hiddenField = document.querySelector('input[name="paymentID"]');
+        if (!hiddenField) {
+            hiddenField = document.createElement('input');
+            hiddenField.type = 'hidden';
+            hiddenField.name = 'paymentID';
+            document.querySelector('#paymentModal form').appendChild(hiddenField);
+        }
+        hiddenField.value = data.paymentID || '';
     }
 
     function populateTeamForm(data) {
-        document.querySelector('input[name="team_name"]').value = data.teamName || '';
-        document.querySelector('select[name="team_type"]').value = data.teamType || '';
-        document.querySelector('select[name="locationID"]').value = data.locationID || '';
+        document.querySelector('input[name="name"]').value = data.teamName || '';
+        document.querySelector('select[name="gender"]').value = data.teamType || '';
+        document.querySelector('select[name="location_id"]').value = data.locationID || '';
         
         let hiddenField = document.querySelector('input[name="teamID"]');
         if (!hiddenField) {
@@ -480,8 +636,10 @@
         document.querySelector('select[name="type"]').value = data.type || '';
         document.querySelector('input[name="date"]').value = data.date || '';
         document.querySelector('input[name="time"]').value = data.time || '';
-        document.querySelector('select[name="locationID"]').value = data.locationID || '';
-        document.querySelector('select[name="coachID"]').value = data.coachID || '';
+        document.querySelector('select[name="location_id"]').value = data.locationID || '';
+        document.querySelector('select[name="team1_id"]').value = data.team1ID || '';
+        document.querySelector('select[name="team2_id"]').value = data.team2ID || '';
+        document.querySelector('select[name="coach_id"]').value = data.coachID || '';
         document.querySelector('input[name="score"]').value = data.score || '';
         
         let hiddenField = document.querySelector('input[name="sessionID"]');
@@ -491,18 +649,117 @@
             hiddenField.name = 'sessionID';
             document.querySelector('#sessionModal form').appendChild(hiddenField);
         }
-        hiddenField.value = data.id || '';
+        hiddenField.value = data.sessionID || '';
     }
 
     function populateHobbyForm(data) {
         document.querySelector('input[name="hobbyName"]').value = data.hobbyName || '';
+        
+        // Add hidden field for old hobby name when editing
+        let hiddenField = document.querySelector('input[name="oldHobbyName"]');
+        if (!hiddenField) {
+            hiddenField = document.createElement('input');
+            hiddenField.type = 'hidden';
+            hiddenField.name = 'oldHobbyName';
+            document.querySelector('#hobbyModal form').appendChild(hiddenField);
+        }
+        hiddenField.value = data.hobbyName || '';
     }
 
     function populateWorkInfoForm(data) {
         document.querySelector('select[name="pID"]').value = data.pID || '';
         document.querySelector('select[name="locationID"]').value = data.locationID || '';
-        document.querySelector('input[name="start_date"]').value = data.startDate || '';
-        document.querySelector('input[name="end_date"]').value = data.endDate || '';
+        document.querySelector('input[name="startDate"]').value = data.startDate || '';
+        document.querySelector('input[name="endDate"]').value = data.endDate || '';
+        
+        // Add hidden fields for old values when editing
+        let oldPIDField = document.querySelector('input[name="oldPID"]');
+        if (!oldPIDField) {
+            oldPIDField = document.createElement('input');
+            oldPIDField.type = 'hidden';
+            oldPIDField.name = 'oldPID';
+            document.querySelector('#workInfoModal form').appendChild(oldPIDField);
+        }
+        oldPIDField.value = data.pID || '';
+        
+        let oldLocationField = document.querySelector('input[name="oldLocationID"]');
+        if (!oldLocationField) {
+            oldLocationField = document.createElement('input');
+            oldLocationField.type = 'hidden';
+            oldLocationField.name = 'oldLocationID';
+            document.querySelector('#workInfoModal form').appendChild(oldLocationField);
+        }
+        oldLocationField.value = data.locationID || '';
+        
+        let oldStartDateField = document.querySelector('input[name="oldStartDate"]');
+        if (!oldStartDateField) {
+            oldStartDateField = document.createElement('input');
+            oldStartDateField.type = 'hidden';
+            oldStartDateField.name = 'oldStartDate';
+            document.querySelector('#workInfoModal form').appendChild(oldStartDateField);
+        }
+        oldStartDateField.value = data.startDate || '';
+    }
+
+    // New form population functions for additional tables
+    function populatePostalAreaForm(data) {
+        document.querySelector('input[name="postalCode"]').value = data.postalCode || '';
+        document.querySelector('input[name="city"]').value = data.city || '';
+        document.querySelector('input[name="province"]').value = data.province || '';
+        
+        let hiddenField = document.querySelector('input[name="postalAreaID"]');
+        if (!hiddenField) {
+            hiddenField = document.createElement('input');
+            hiddenField.type = 'hidden';
+            hiddenField.name = 'postalAreaID';
+            document.querySelector('#postalAreaModal form').appendChild(hiddenField);
+        }
+        hiddenField.value = data.postalAreaID || '';
+    }
+
+    function populateLocationPhoneForm(data) {
+        document.querySelector('select[name="locationID"]').value = data.locationID || '';
+        document.querySelector('input[name="phone"]').value = data.phone || '';
+        
+        let hiddenField = document.querySelector('input[name="locationPhoneID"]');
+        if (!hiddenField) {
+            hiddenField = document.createElement('input');
+            hiddenField.type = 'hidden';
+            hiddenField.name = 'locationPhoneID';
+            document.querySelector('#locationPhoneModal form').appendChild(hiddenField);
+        }
+        hiddenField.value = data.locationPhoneID || '';
+    }
+
+    function populateFamilyHistoryForm(data) {
+        document.querySelector('select[name="memberID"]').value = data.memberID || '';
+        document.querySelector('select[name="familyMemID"]').value = data.familyMemID || '';
+        document.querySelector('input[name="startDate"]').value = data.startDate || '';
+        document.querySelector('input[name="endDate"]').value = data.endDate || '';
+        
+        let hiddenField = document.querySelector('input[name="familyHistoryID"]');
+        if (!hiddenField) {
+            hiddenField = document.createElement('input');
+            hiddenField.type = 'hidden';
+            hiddenField.name = 'familyHistoryID';
+            document.querySelector('#familyHistoryModal form').appendChild(hiddenField);
+        }
+        hiddenField.value = data.familyHistoryID || '';
+    }
+
+    function populateTeamMemberForm(data) {
+        document.querySelector('select[name="teamID"]').value = data.teamID || '';
+        document.querySelector('select[name="memberID"]').value = data.memberID || '';
+        document.querySelector('select[name="roleInTeam"]').value = data.roleInTeam || '';
+        
+        let hiddenField = document.querySelector('input[name="teamMemberID"]');
+        if (!hiddenField) {
+            hiddenField = document.createElement('input');
+            hiddenField.type = 'hidden';
+            hiddenField.name = 'teamMemberID';
+            document.querySelector('#teamMemberModal form').appendChild(hiddenField);
+        }
+        hiddenField.value = data.teamMemberID || '';
     }
 
     // Search functionality
@@ -699,6 +956,46 @@
         });
     }
 
+    // New filter functions for additional tables
+    function filterLocationPhones() {
+        const locationFilter = document.getElementById('locationPhoneFilter').value;
+        const rows = document.querySelectorAll('#locationphones .data-table tbody tr');
+        
+        rows.forEach(row => {
+            if (!locationFilter || row.cells[0].textContent.includes(locationFilter)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    function filterFamilyHistory() {
+        const memberFilter = document.getElementById('familyHistoryMemberFilter').value;
+        const rows = document.querySelectorAll('#familyhistory .data-table tbody tr');
+        
+        rows.forEach(row => {
+            if (!memberFilter || row.cells[0].textContent.includes(memberFilter)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    function filterTeamMembers() {
+        const teamFilter = document.getElementById('teamMemberFilter').value;
+        const rows = document.querySelectorAll('#teammembers .data-table tbody tr');
+        
+        rows.forEach(row => {
+            if (!teamFilter || row.cells[0].textContent.includes(teamFilter)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
     function generateReport() {
         const reportType = document.getElementById('reportType').value;
         const locationFilter = document.querySelector('#reports select[onchange="generateReport()"] + select')?.value || '';
@@ -858,4 +1155,4 @@
             });
         }
     });
-</script> 
+</script>

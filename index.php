@@ -47,6 +47,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             case 'save_workinfo':
                 saveWorkInfo($pdo, $_POST);
                 break;
+            case 'save_postalarea':
+                savePostalArea($pdo, $_POST);
+                break;
+            case 'save_locationphone':
+                saveLocationPhone($pdo, $_POST);
+                break;
+            case 'save_familyhistory':
+                saveFamilyHistory($pdo, $_POST);
+                break;
+            case 'save_teammember':
+                saveTeamMember($pdo, $_POST);
+                break;
         }
     }
 }
@@ -54,18 +66,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Database functions
 function saveLocation($pdo, $data) {
     try {
-        $stmt = $pdo->prepare("INSERT INTO Location (name, type, address, city, province, postalCode, phone, webAddress, maxCapacity) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([
-            $data['name'],
-            $data['type'],
-            $data['address'],
-            $data['city'],
-            $data['province'],
-            $data['postal_code'],
-            $data['phone'],
-            $data['web_address'],
-            $data['max_capacity']
-        ]);
+        // Check if we're editing an existing location
+        if (isset($data['locationID']) && !empty($data['locationID'])) {
+            // UPDATE existing location
+            $stmt = $pdo->prepare("UPDATE Location SET name = ?, type = ?, address = ?, city = ?, province = ?, postalCode = ?, phone = ?, webAddress = ?, maxCapacity = ? WHERE locationID = ?");
+            $stmt->execute([
+                $data['name'],
+                $data['type'],
+                $data['address'],
+                $data['city'],
+                $data['province'],
+                $data['postal_code'],
+                $data['phone'],
+                $data['web_address'],
+                $data['max_capacity'],
+                $data['locationID']
+            ]);
+        } else {
+            // INSERT new location
+            $stmt = $pdo->prepare("INSERT INTO Location (name, type, address, city, province, postalCode, phone, webAddress, maxCapacity) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([
+                $data['name'],
+                $data['type'],
+                $data['address'],
+                $data['city'],
+                $data['province'],
+                $data['postal_code'],
+                $data['phone'],
+                $data['web_address'],
+                $data['max_capacity']
+            ]);
+        }
         return true;
     } catch (PDOException $e) {
         return false;
@@ -74,22 +105,45 @@ function saveLocation($pdo, $data) {
 
 function savePersonnel($pdo, $data) {
     try {
-        $stmt = $pdo->prepare("INSERT INTO Personnel (firstName, lastName, dob, ssn, medicare, phone, address, city, province, postalCode, email, role, mandate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([
-            $data['first_name'],
-            $data['last_name'],
-            $data['dob'],
-            $data['ssn'],
-            $data['medicare'],
-            $data['phone'],
-            $data['address'],
-            $data['city'],
-            $data['province'],
-            $data['postal_code'],
-            $data['email'],
-            $data['role'],
-            $data['mandate']
-        ]);
+        // Check if we're editing existing personnel
+        if (isset($data['pID']) && !empty($data['pID'])) {
+            // UPDATE existing personnel
+            $stmt = $pdo->prepare("UPDATE Personnel SET firstName = ?, lastName = ?, dob = ?, ssn = ?, medicare = ?, phone = ?, address = ?, city = ?, province = ?, postalCode = ?, email = ?, role = ?, mandate = ? WHERE employeeID = ?");
+            $stmt->execute([
+                $data['first_name'],
+                $data['last_name'],
+                $data['dob'],
+                $data['ssn'],
+                $data['medicare'],
+                $data['phone'],
+                $data['address'],
+                $data['city'],
+                $data['province'],
+                $data['postal_code'],
+                $data['email'],
+                $data['role'],
+                $data['mandate'],
+                $data['pID']
+            ]);
+        } else {
+            // INSERT new personnel
+            $stmt = $pdo->prepare("INSERT INTO Personnel (firstName, lastName, dob, ssn, medicare, phone, address, city, province, postalCode, email, role, mandate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([
+                $data['first_name'],
+                $data['last_name'],
+                $data['dob'],
+                $data['ssn'],
+                $data['medicare'],
+                $data['phone'],
+                $data['address'],
+                $data['city'],
+                $data['province'],
+                $data['postal_code'],
+                $data['email'],
+                $data['role'],
+                $data['mandate']
+            ]);
+        }
         return true;
     } catch (PDOException $e) {
         return false;
@@ -98,22 +152,45 @@ function savePersonnel($pdo, $data) {
 
 function saveFamily($pdo, $data) {
     try {
-        $stmt = $pdo->prepare("INSERT INTO FamilyMembers (relationshipType, firstName, lastName, dob, ssn, medicare, phone, address, city, province, postalCode, email, locationID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([
-            $data['relationshipType'],
-            $data['first_name'],
-            $data['last_name'],
-            $data['dob'],
-            $data['ssn'],
-            $data['medicare'],
-            $data['phone'],
-            $data['address'],
-            $data['city'],
-            $data['province'],
-            $data['postal_code'],
-            $data['email'],
-            $data['location_id']
-        ]);
+        // Check if we're editing existing family member
+        if (isset($data['familyMemID']) && !empty($data['familyMemID'])) {
+            // UPDATE existing family member
+            $stmt = $pdo->prepare("UPDATE FamilyMembers SET relationshipType = ?, firstName = ?, lastName = ?, dob = ?, ssn = ?, medicare = ?, phone = ?, address = ?, city = ?, province = ?, postalCode = ?, email = ?, locationID = ? WHERE familyMemID = ?");
+            $stmt->execute([
+                $data['relationshipType'],
+                $data['first_name'],
+                $data['last_name'],
+                $data['dob'],
+                $data['ssn'],
+                $data['medicare'],
+                $data['phone'],
+                $data['address'],
+                $data['city'],
+                $data['province'],
+                $data['postal_code'],
+                $data['email'],
+                $data['location_id'],
+                $data['familyMemID']
+            ]);
+        } else {
+            // INSERT new family member
+            $stmt = $pdo->prepare("INSERT INTO FamilyMembers (relationshipType, firstName, lastName, dob, ssn, medicare, phone, address, city, province, postalCode, email, locationID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([
+                $data['relationshipType'],
+                $data['first_name'],
+                $data['last_name'],
+                $data['dob'],
+                $data['ssn'],
+                $data['medicare'],
+                $data['phone'],
+                $data['address'],
+                $data['city'],
+                $data['province'],
+                $data['postal_code'],
+                $data['email'],
+                $data['location_id']
+            ]);
+        }
         return true;
     } catch (PDOException $e) {
         return false;
@@ -122,26 +199,53 @@ function saveFamily($pdo, $data) {
 
 function saveMember($pdo, $data) {
     try {
-        $stmt = $pdo->prepare("INSERT INTO ClubMembers (firstName, lastName, dob, age, height, weight, ssn, medicare, phone, address, email, city, province, postalCode, locationID, familyMemID, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([
-            $data['first_name'],
-            $data['last_name'],
-            $data['dob'],
-            $data['age'],
-            $data['height'],
-            $data['weight'],
-            $data['ssn'],
-            $data['medicare'],
-            $data['phone'],
-            $data['address'],
-            $data['email'],
-            $data['city'],
-            $data['province'],
-            $data['postal_code'],
-            $data['location_id'],
-            $data['family_member_id'] ?: null,
-            $data['status'] ?? 'Active'
-        ]);
+        // Check if we're editing existing member
+        if (isset($data['memberID']) && !empty($data['memberID'])) {
+            // UPDATE existing member
+            $stmt = $pdo->prepare("UPDATE ClubMembers SET firstName = ?, lastName = ?, dob = ?, age = ?, height = ?, weight = ?, ssn = ?, medicare = ?, phone = ?, address = ?, email = ?, city = ?, province = ?, postalCode = ?, locationID = ?, familyMemID = ?, status = ? WHERE memberID = ?");
+            $stmt->execute([
+                $data['first_name'],
+                $data['last_name'],
+                $data['dob'],
+                $data['age'],
+                $data['height'],
+                $data['weight'],
+                $data['ssn'],
+                $data['medicare'],
+                $data['phone'],
+                $data['address'],
+                $data['email'],
+                $data['city'],
+                $data['province'],
+                $data['postal_code'],
+                $data['location_id'],
+                $data['family_member_id'] ?: null,
+                $data['status'] ?? 'Active',
+                $data['memberID']
+            ]);
+        } else {
+            // INSERT new member
+            $stmt = $pdo->prepare("INSERT INTO ClubMembers (firstName, lastName, dob, age, height, weight, ssn, medicare, phone, address, email, city, province, postalCode, locationID, familyMemID, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([
+                $data['first_name'],
+                $data['last_name'],
+                $data['dob'],
+                $data['age'],
+                $data['height'],
+                $data['weight'],
+                $data['ssn'],
+                $data['medicare'],
+                $data['phone'],
+                $data['address'],
+                $data['email'],
+                $data['city'],
+                $data['province'],
+                $data['postal_code'],
+                $data['location_id'],
+                $data['family_member_id'] ?: null,
+                $data['status'] ?? 'Active'
+            ]);
+        }
         return true;
     } catch (PDOException $e) {
         return false;
@@ -150,15 +254,31 @@ function saveMember($pdo, $data) {
 
 function savePayment($pdo, $data) {
     try {
-        $stmt = $pdo->prepare("INSERT INTO Payments (memberID, amount, method, paymentDate, membershipYear, installmentNo) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute([
-            $data['member_id'],
-            $data['amount'],
-            $data['payment_method'],
-            $data['payment_date'],
-            $data['year'],
-            $data['installment_no'] ?? 1
-        ]);
+        // Check if we're editing existing payment
+        if (isset($data['paymentID']) && !empty($data['paymentID'])) {
+            // UPDATE existing payment
+            $stmt = $pdo->prepare("UPDATE Payments SET memberID = ?, amount = ?, method = ?, paymentDate = ?, membershipYear = ?, installmentNo = ? WHERE paymentID = ?");
+            $stmt->execute([
+                $data['member_id'],
+                $data['amount'],
+                $data['payment_method'],
+                $data['payment_date'],
+                $data['year'],
+                $data['installment_no'] ?? 1,
+                $data['paymentID']
+            ]);
+        } else {
+            // INSERT new payment
+            $stmt = $pdo->prepare("INSERT INTO Payments (memberID, amount, method, paymentDate, membershipYear, installmentNo) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->execute([
+                $data['member_id'],
+                $data['amount'],
+                $data['payment_method'],
+                $data['payment_date'],
+                $data['year'],
+                $data['installment_no'] ?? 1
+            ]);
+        }
         return true;
     } catch (PDOException $e) {
         return false;
@@ -167,12 +287,25 @@ function savePayment($pdo, $data) {
 
 function saveTeam($pdo, $data) {
     try {
-        $stmt = $pdo->prepare("INSERT INTO Teams (teamName, teamType, locationID) VALUES (?, ?, ?)");
-        $stmt->execute([
-            $data['name'],
-            $data['team_type'],
-            $data['location_id']
-        ]);
+        // Check if we're editing existing team
+        if (isset($data['teamID']) && !empty($data['teamID'])) {
+            // UPDATE existing team
+            $stmt = $pdo->prepare("UPDATE Teams SET teamName = ?, teamType = ?, locationID = ? WHERE teamID = ?");
+            $stmt->execute([
+                $data['name'],
+                $data['team_type'],
+                $data['location_id'],
+                $data['teamID']
+            ]);
+        } else {
+            // INSERT new team
+            $stmt = $pdo->prepare("INSERT INTO Teams (teamName, teamType, locationID) VALUES (?, ?, ?)");
+            $stmt->execute([
+                $data['name'],
+                $data['team_type'],
+                $data['location_id']
+            ]);
+        }
         return true;
     } catch (PDOException $e) {
         return false;
@@ -181,17 +314,35 @@ function saveTeam($pdo, $data) {
 
 function saveSession($pdo, $data) {
     try {
-        $stmt = $pdo->prepare("INSERT INTO sessions (type, date, time, location_id, team1_id, team2_id, coach_id, score) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([
-            $data['type'],
-            $data['date'],
-            $data['time'],
-            $data['location_id'],
-            $data['team1_id'],
-            $data['team2_id'] ?: null,
-            $data['coach_id'],
-            $data['score'] ?: null
-        ]);
+        // Check if we're editing existing session
+        if (isset($data['sessionID']) && !empty($data['sessionID'])) {
+            // UPDATE existing session
+            $stmt = $pdo->prepare("UPDATE sessions SET type = ?, date = ?, time = ?, location_id = ?, team1_id = ?, team2_id = ?, coach_id = ?, score = ? WHERE sessionID = ?");
+            $stmt->execute([
+                $data['type'],
+                $data['date'],
+                $data['time'],
+                $data['location_id'],
+                $data['team1_id'],
+                $data['team2_id'] ?: null,
+                $data['coach_id'],
+                $data['score'] ?: null,
+                $data['sessionID']
+            ]);
+        } else {
+            // INSERT new session
+            $stmt = $pdo->prepare("INSERT INTO sessions (type, date, time, location_id, team1_id, team2_id, coach_id, score) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([
+                $data['type'],
+                $data['date'],
+                $data['time'],
+                $data['location_id'],
+                $data['team1_id'],
+                $data['team2_id'] ?: null,
+                $data['coach_id'],
+                $data['score'] ?: null
+            ]);
+        }
         return true;
     } catch (PDOException $e) {
         return false;
@@ -321,9 +472,10 @@ function getTeamMembers($pdo) {
     try {
         $stmt = $pdo->query("SELECT tm.*, t.teamName, 
                              CONCAT(m.firstName, ' ', m.lastName) as member_name
-                             FROM TeamMembers tm 
-                             LEFT JOIN Teams t ON tm.teamID = t.teamID 
-                             LEFT JOIN ClubMembers m ON tm.memberID = m.memberID 
+                             FROM TeamMember tm 
+                             LEFT JOIN Team t ON tm.teamID = t.teamID 
+                             LEFT JOIN ClubMember cm ON tm.memberID = cm.memberID 
+                             LEFT JOIN Person m ON cm.memberID = m.pID 
                              ORDER BY t.teamName, m.lastName");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
@@ -333,8 +485,16 @@ function getTeamMembers($pdo) {
 
 function saveHobby($pdo, $data) {
     try {
-        $stmt = $pdo->prepare("INSERT INTO Hobbies (hobbyName) VALUES (?)");
-        $stmt->execute([$data['hobbyName']]);
+        // Check if we're editing existing hobby
+        if (isset($data['oldHobbyName']) && !empty($data['oldHobbyName'])) {
+            // UPDATE existing hobby
+            $stmt = $pdo->prepare("UPDATE Hobbies SET hobbyName = ? WHERE hobbyName = ?");
+            $stmt->execute([$data['hobbyName'], $data['oldHobbyName']]);
+        } else {
+            // INSERT new hobby
+            $stmt = $pdo->prepare("INSERT INTO Hobbies (hobbyName) VALUES (?)");
+            $stmt->execute([$data['hobbyName']]);
+        }
         return true;
     } catch (PDOException $e) {
         return false;
@@ -356,17 +516,174 @@ function saveMemberHobby($pdo, $data) {
 
 function saveWorkInfo($pdo, $data) {
     try {
-        $stmt = $pdo->prepare("INSERT INTO WorkInfo (pID, locationID, startDate, endDate) VALUES (?, ?, ?, ?)");
-        $stmt->execute([
-            $data['pID'],
-            $data['locationID'],
-            $data['startDate'],
-            $data['endDate'] ?: null
-        ]);
+        // Check if we're editing existing work info
+        if (isset($data['oldPID']) && isset($data['oldLocationID']) && isset($data['oldStartDate'])) {
+            // UPDATE existing work info
+            $stmt = $pdo->prepare("UPDATE WorkInfo SET pID = ?, locationID = ?, startDate = ?, endDate = ? WHERE pID = ? AND locationID = ? AND startDate = ?");
+            $stmt->execute([
+                $data['pID'],
+                $data['locationID'],
+                $data['startDate'],
+                $data['endDate'] ?: null,
+                $data['oldPID'],
+                $data['oldLocationID'],
+                $data['oldStartDate']
+            ]);
+        } else {
+            // INSERT new work info
+            $stmt = $pdo->prepare("INSERT INTO WorkInfo (pID, locationID, startDate, endDate) VALUES (?, ?, ?, ?)");
+            $stmt->execute([
+                $data['pID'],
+                $data['locationID'],
+                $data['startDate'],
+                $data['endDate'] ?: null
+            ]);
+        }
         return true;
     } catch (PDOException $e) {
         return false;
     }
+}
+
+// New functions for additional tables
+function savePostalArea($pdo, $data) {
+    try {
+        // Check if we're editing existing postal area
+        if (isset($data['oldPostalCode']) && !empty($data['oldPostalCode'])) {
+            // UPDATE existing postal area
+            $stmt = $pdo->prepare("UPDATE PostalAreaInfo SET postalCode = ?, city = ?, province = ? WHERE postalCode = ?");
+            $stmt->execute([
+                $data['postalCode'],
+                $data['city'],
+                $data['province'],
+                $data['oldPostalCode']
+            ]);
+        } else {
+            // INSERT new postal area
+            $stmt = $pdo->prepare("INSERT INTO PostalAreaInfo (postalCode, city, province) VALUES (?, ?, ?)");
+            $stmt->execute([
+                $data['postalCode'],
+                $data['city'],
+                $data['province']
+            ]);
+        }
+        return true;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+function saveLocationPhone($pdo, $data) {
+    try {
+        // Check if we're editing existing location phone
+        if (isset($data['oldPhone']) && !empty($data['oldPhone'])) {
+            // UPDATE existing location phone
+            $stmt = $pdo->prepare("UPDATE LocationPhone SET phone = ? WHERE locationID = ? AND phone = ?");
+            $stmt->execute([
+                $data['phone'],
+                $data['locationID'],
+                $data['oldPhone']
+            ]);
+        } else {
+            // INSERT new location phone
+            $stmt = $pdo->prepare("INSERT INTO LocationPhone (locationID, phone) VALUES (?, ?)");
+            $stmt->execute([
+                $data['locationID'],
+                $data['phone']
+            ]);
+        }
+        return true;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+function saveFamilyHistory($pdo, $data) {
+    try {
+        // Check if we're editing existing family history
+        if (isset($data['oldStartDate']) && !empty($data['oldStartDate'])) {
+            // UPDATE existing family history
+            $stmt = $pdo->prepare("UPDATE FamilyHistory SET memberID = ?, type = ?, familyMemID = ?, startDate = ?, endDate = ? WHERE memberID = ? AND familyMemID = ? AND startDate = ?");
+            $stmt->execute([
+                $data['memberID'],
+                $data['type'],
+                $data['familyMemID'],
+                $data['startDate'],
+                $data['endDate'] ?: null,
+                $data['oldMemberID'],
+                $data['oldFamilyMemID'],
+                $data['oldStartDate']
+            ]);
+        } else {
+            // INSERT new family history
+            $stmt = $pdo->prepare("INSERT INTO FamilyHistory (memberID, type, familyMemID, startDate, endDate) VALUES (?, ?, ?, ?, ?)");
+            $stmt->execute([
+                $data['memberID'],
+                $data['type'],
+                $data['familyMemID'],
+                $data['startDate'],
+                $data['endDate'] ?: null
+            ]);
+        }
+        return true;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+function saveTeamMember($pdo, $data) {
+    try {
+        // Check if we're editing existing team member
+        if (isset($data['oldMemberID']) && !empty($data['oldMemberID'])) {
+            // UPDATE existing team member
+            $stmt = $pdo->prepare("UPDATE TeamMember SET teamID = ?, memberID = ?, roleInTeam = ? WHERE teamID = ? AND memberID = ?");
+            $stmt->execute([
+                $data['teamID'],
+                $data['memberID'],
+                $data['roleInTeam'],
+                $data['oldTeamID'],
+                $data['oldMemberID']
+            ]);
+        } else {
+            // INSERT new team member
+            $stmt = $pdo->prepare("INSERT INTO TeamMember (teamID, memberID, roleInTeam) VALUES (?, ?, ?)");
+            $stmt->execute([
+                $data['teamID'],
+                $data['memberID'],
+                $data['roleInTeam']
+            ]);
+        }
+        return true;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+// Data retrieval functions for new tables
+function getPostalAreas($pdo) {
+    $stmt = $pdo->query("SELECT * FROM PostalAreaInfo ORDER BY postalCode");
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getLocationPhones($pdo) {
+    $stmt = $pdo->query("SELECT lp.*, l.name as location_name 
+                        FROM LocationPhone lp 
+                        LEFT JOIN Location l ON lp.locationID = l.locationID 
+                        ORDER BY l.name, lp.phone");
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getFamilyHistory($pdo) {
+    $stmt = $pdo->query("SELECT fh.*, 
+                             CONCAT(m.firstName, ' ', m.lastName) as member_name,
+                             CONCAT(fm.firstName, ' ', fm.lastName) as family_member_name
+                        FROM FamilyHistory fh 
+                        LEFT JOIN ClubMember cm ON fh.memberID = cm.memberID 
+                        LEFT JOIN Person m ON cm.memberID = m.pID 
+                        LEFT JOIN FamilyMember fm_rel ON fh.familyMemID = fm_rel.familyMemID 
+                        LEFT JOIN Person fm ON fm_rel.familyMemID = fm.pID 
+                        ORDER BY fh.startDate DESC");
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 ?>
 <!DOCTYPE html>
@@ -741,6 +1058,10 @@ function saveWorkInfo($pdo, $data) {
             <button class="nav-tab" onclick="showSection('teams')">Teams</button>
             <button class="nav-tab" onclick="showSection('workinfo')">Work History</button>
             <button class="nav-tab" onclick="showSection('sessions')">Sessions</button>
+            <button class="nav-tab" onclick="showSection('postalareas')">Postal Areas</button>
+            <button class="nav-tab" onclick="showSection('locationphones')">Location Phones</button>
+            <button class="nav-tab" onclick="showSection('familyhistory')">Family History</button>
+            <button class="nav-tab" onclick="showSection('teammembers')">Team Members</button>
             <button class="nav-tab" onclick="showSection('emails')">Emails</button>
         </div>
 
@@ -1280,6 +1601,207 @@ function saveWorkInfo($pdo, $data) {
                                 echo "<td class='action-buttons'>";
                                 echo "<button class='view-btn' onclick='viewEmail(" . $email['emailID'] . ")'>View</button>";
                                 echo "<button class='delete-btn' onclick='deleteEmail(" . $email['emailID'] . ")'>Delete</button>";
+                                echo "</td>";
+                                echo "</tr>";
+                            }
+                        }
+                        ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Postal Areas Section -->
+            <div id="postalareas" class="section">
+                <div class="section-header">
+                    <h2 class="section-title">Postal Area Management</h2>
+                    <button class="btn" onclick="openModal('postalAreaModal')">Add Postal Area</button>
+                </div>
+                
+                <input type="text" class="search-bar" placeholder="Search postal areas...">
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Postal Code</th>
+                            <th>City</th>
+                            <th>Province</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        $postalAreas = getPostalAreas($pdo);
+                        foreach ($postalAreas as $area) {
+                            echo "<tr>";
+                            echo "<td>" . htmlspecialchars($area['postalCode']) . "</td>";
+                            echo "<td>" . htmlspecialchars($area['city']) . "</td>";
+                            echo "<td>" . htmlspecialchars($area['province']) . "</td>";
+                            echo "<td class='action-buttons'>";
+                            echo "<button class='edit-btn' onclick='editPostalArea(\"" . htmlspecialchars($area['postalCode']) . "\")'>Edit</button>";
+                            echo "<button class='delete-btn' onclick='deletePostalArea(\"" . htmlspecialchars($area['postalCode']) . "\")'>Delete</button>";
+                            echo "</td>";
+                            echo "</tr>";
+                        }
+                        ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Location Phones Section -->
+            <div id="locationphones" class="section">
+                <div class="section-header">
+                    <h2 class="section-title">Location Phone Management</h2>
+                    <button class="btn" onclick="openModal('locationPhoneModal')">Add Location Phone</button>
+                </div>
+                
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Location:</label>
+                        <select id="locationPhoneFilter" onchange="filterLocationPhones()">
+                            <option value="">All Locations</option>
+                            <?php
+                            $locations = getLocations($pdo);
+                            foreach ($locations as $location) {
+                                echo "<option value='" . $location['locationID'] . "'>" . htmlspecialchars($location['name']) . "</option>";
+                            }
+                            ?>
+                        </select>
+                    </div>
+                </div>
+                
+                <input type="text" class="search-bar" placeholder="Search location phones...">
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Location</th>
+                            <th>Phone</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        $locationPhones = getLocationPhones($pdo);
+                        if (empty($locationPhones)) {
+                            echo "<tr><td colspan='3' style='text-align: center;'>No location phones found.</td></tr>";
+                        } else {
+                            foreach ($locationPhones as $phone) {
+                                echo "<tr>";
+                                echo "<td>" . htmlspecialchars($phone['location_name'] ?? 'N/A') . "</td>";
+                                echo "<td>" . htmlspecialchars($phone['phone']) . "</td>";
+                                echo "<td class='action-buttons'>";
+                                echo "<button class='edit-btn' onclick='editLocationPhone(" . $phone['locationID'] . ", \"" . htmlspecialchars($phone['phone']) . "\")'>Edit</button>";
+                                echo "<button class='delete-btn' onclick='deleteLocationPhone(" . $phone['locationID'] . ", \"" . htmlspecialchars($phone['phone']) . "\")'>Delete</button>";
+                                echo "</td>";
+                                echo "</tr>";
+                            }
+                        }
+                        ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Family History Section -->
+            <div id="familyhistory" class="section">
+                <div class="section-header">
+                    <h2 class="section-title">Family History Management</h2>
+                    <button class="btn" onclick="openModal('familyHistoryModal')">Add Family History</button>
+                </div>
+                
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Filter by Member:</label>
+                        <select id="familyHistoryMemberFilter" onchange="filterFamilyHistory()">
+                            <option value="">All Members</option>
+                            <?php
+                            $members = getMembers($pdo);
+                            foreach ($members as $member) {
+                                echo "<option value='" . $member['memberID'] . "'>" . htmlspecialchars($member['firstName'] . ' ' . $member['lastName']) . "</option>";
+                            }
+                            ?>
+                        </select>
+                    </div>
+                </div>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Member Name</th>
+                            <th>Family Member</th>
+                            <th>Type</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        $familyHistory = getFamilyHistory($pdo);
+                        foreach ($familyHistory as $fh) {
+                            echo "<tr>";
+                            echo "<td>" . htmlspecialchars($fh['member_name']) . "</td>";
+                            echo "<td>" . htmlspecialchars($fh['family_member_name']) . "</td>";
+                            echo "<td>" . htmlspecialchars($fh['type']) . "</td>";
+                            echo "<td>" . htmlspecialchars($fh['startDate']) . "</td>";
+                            echo "<td>" . htmlspecialchars($fh['endDate'] ?? 'Ongoing') . "</td>";
+                            echo "<td class='action-buttons'>";
+                            echo "<button class='edit-btn' onclick='editFamilyHistory(" . $fh['memberID'] . ", " . $fh['familyMemID'] . ", \"" . $fh['startDate'] . "\")'>Edit</button>";
+                            echo "<button class='delete-btn' onclick='deleteFamilyHistory(" . $fh['memberID'] . ", " . $fh['familyMemID'] . ", \"" . $fh['startDate'] . "\")'>Delete</button>";
+                            echo "</td>";
+                            echo "</tr>";
+                        }
+                        ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Team Members Section -->
+            <div id="teammembers" class="section">
+                <div class="section-header">
+                    <h2 class="section-title">Team Member Management</h2>
+                    <button class="btn" onclick="openModal('teamMemberModal')">Add Team Member</button>
+                </div>
+                
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Team:</label>
+                        <select id="teamMemberFilter" onchange="filterTeamMembers()">
+                            <option value="">All Teams</option>
+                            <?php
+                            $teams = getTeams($pdo);
+                            foreach ($teams as $team) {
+                                echo "<option value='" . $team['teamID'] . "'>" . htmlspecialchars($team['teamName']) . "</option>";
+                            }
+                            ?>
+                        </select>
+                    </div>
+                </div>
+                
+                <input type="text" class="search-bar" placeholder="Search team members...">
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Team Name</th>
+                            <th>Member Name</th>
+                            <th>Role</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        $teamMembers = getTeamMembers($pdo);
+                        if (empty($teamMembers)) {
+                            echo "<tr><td colspan='4' style='text-align: center;'>No team members found.</td></tr>";
+                        } else {
+                            foreach ($teamMembers as $tm) {
+                                echo "<tr>";
+                                echo "<td>" . htmlspecialchars($tm['teamName']) . "</td>";
+                                echo "<td>" . htmlspecialchars($tm['member_name']) . "</td>";
+                                echo "<td>" . htmlspecialchars($tm['roleInTeam']) . "</td>";
+                                echo "<td class='action-buttons'>";
+                                echo "<button class='edit-btn' onclick='editTeamMember(" . $tm['teamID'] . ", " . $tm['memberID'] . ", \"" . htmlspecialchars($tm['roleInTeam']) . "\")'>Edit</button>";
+                                echo "<button class='delete-btn' onclick='deleteTeamMember(" . $tm['teamID'] . ", " . $tm['memberID'] . ")'>Delete</button>";
                                 echo "</td>";
                                 echo "</tr>";
                             }
