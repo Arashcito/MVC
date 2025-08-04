@@ -38,6 +38,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             case 'save_session':
                 saveSession($pdo, $_POST);
                 break;
+            case 'save_hobby':
+                saveHobby($pdo, $_POST);
+                break;
+            case 'save_member_hobby':
+                saveMemberHobby($pdo, $_POST);
+                break;
+            case 'save_workinfo':
+                saveWorkInfo($pdo, $_POST);
+                break;
         }
     }
 }
@@ -45,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Database functions
 function saveLocation($pdo, $data) {
     try {
-        $stmt = $pdo->prepare("INSERT INTO locations (name, type, address, city, province, postal_code, phone, web_address, max_capacity) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO Location (name, type, address, city, province, postalCode, phone, webAddress, maxCapacity) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([
             $data['name'],
             $data['type'],
@@ -65,7 +74,7 @@ function saveLocation($pdo, $data) {
 
 function savePersonnel($pdo, $data) {
     try {
-        $stmt = $pdo->prepare("INSERT INTO personnel (first_name, last_name, dob, ssn, medicare, phone, address, city, province, postal_code, email, role, mandate, location_id, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO Personnel (firstName, lastName, dob, ssn, medicare, phone, address, city, province, postalCode, email, role, mandate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([
             $data['first_name'],
             $data['last_name'],
@@ -79,10 +88,7 @@ function savePersonnel($pdo, $data) {
             $data['postal_code'],
             $data['email'],
             $data['role'],
-            $data['mandate'],
-            $data['location_id'],
-            $data['start_date'],
-            $data['end_date'] ?: null
+            $data['mandate']
         ]);
         return true;
     } catch (PDOException $e) {
@@ -92,9 +98,9 @@ function savePersonnel($pdo, $data) {
 
 function saveFamily($pdo, $data) {
     try {
-        $stmt = $pdo->prepare("INSERT INTO family_members (type, first_name, last_name, dob, ssn, medicare, phone, address, city, province, postal_code, email, location_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO FamilyMembers (relationshipType, firstName, lastName, dob, ssn, medicare, phone, address, city, province, postalCode, email, locationID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([
-            $data['type'],
+            $data['relationshipType'],
             $data['first_name'],
             $data['last_name'],
             $data['dob'],
@@ -116,20 +122,25 @@ function saveFamily($pdo, $data) {
 
 function saveMember($pdo, $data) {
     try {
-        $stmt = $pdo->prepare("INSERT INTO members (first_name, last_name, dob, height, weight, location_id, phone, email, address, hobbies, family_id, relationship) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO ClubMembers (firstName, lastName, dob, age, height, weight, ssn, medicare, phone, address, email, city, province, postalCode, locationID, familyMemID, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([
             $data['first_name'],
             $data['last_name'],
             $data['dob'],
+            $data['age'],
             $data['height'],
             $data['weight'],
-            $data['location_id'],
+            $data['ssn'],
+            $data['medicare'],
             $data['phone'],
-            $data['email'],
             $data['address'],
-            $data['hobbies'],
-            $data['family_id'] ?: null,
-            $data['relationship'] ?: null
+            $data['email'],
+            $data['city'],
+            $data['province'],
+            $data['postal_code'],
+            $data['location_id'],
+            $data['family_member_id'] ?: null,
+            $data['status'] ?? 'Active'
         ]);
         return true;
     } catch (PDOException $e) {
@@ -139,14 +150,14 @@ function saveMember($pdo, $data) {
 
 function savePayment($pdo, $data) {
     try {
-        $stmt = $pdo->prepare("INSERT INTO payments (member_id, amount, payment_method, payment_date, year, type) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO Payments (memberID, amount, method, paymentDate, membershipYear, installmentNo) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->execute([
             $data['member_id'],
             $data['amount'],
             $data['payment_method'],
             $data['payment_date'],
             $data['year'],
-            $data['type']
+            $data['installment_no'] ?? 1
         ]);
         return true;
     } catch (PDOException $e) {
@@ -156,11 +167,10 @@ function savePayment($pdo, $data) {
 
 function saveTeam($pdo, $data) {
     try {
-        $stmt = $pdo->prepare("INSERT INTO teams (name, gender, head_coach_id, location_id) VALUES (?, ?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO Teams (teamName, teamType, locationID) VALUES (?, ?, ?)");
         $stmt->execute([
             $data['name'],
-            $data['gender'],
-            $data['head_coach_id'],
+            $data['team_type'],
             $data['location_id']
         ]);
         return true;
@@ -195,33 +205,168 @@ function getLocations($pdo) {
 }
 
 function getPersonnel($pdo) {
-    $stmt = $pdo->query("SELECT p.*, l.name as location_name FROM Personnel p LEFT JOIN Location l ON p.pID = l.managerID ORDER BY p.lastName");
+    $stmt = $pdo->query("SELECT p.*, per.firstName, per.lastName, per.email, per.phone, per.address, per.dob, per.ssn, per.medicare, l.name as location_name 
+                        FROM Personnel p 
+                        LEFT JOIN Person per ON p.employeeID = per.pID 
+                        LEFT JOIN Location l ON p.employeeID = l.managerID 
+                        ORDER BY per.lastName");
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 function getFamilyMembers($pdo) {
-    $stmt = $pdo->query("SELECT f.*, l.name as location_name FROM FamilyMembers f LEFT JOIN Location l ON f.locationID = l.locationID ORDER BY f.lastName");
+    $stmt = $pdo->query("SELECT fm.*, p.firstName, p.lastName, p.phone, p.email, p.address 
+                        FROM FamilyMember fm 
+                        LEFT JOIN Person p ON fm.familyMemID = p.pID 
+                        ORDER BY p.lastName");
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 function getMembers($pdo) {
-    $stmt = $pdo->query("SELECT m.*, l.name as location_name, f.firstName as family_first_name, f.lastName as family_last_name FROM ClubMembers m LEFT JOIN Location l ON m.locationID = l.locationID LEFT JOIN FamilyMembers f ON m.familyMemID = f.familyMemID ORDER BY m.lastName");
+    $stmt = $pdo->query("SELECT cm.*, p.firstName, p.lastName, p.dob, p.address, p.phone, p.email, l.name as location_name 
+                        FROM ClubMember cm 
+                        LEFT JOIN Person p ON cm.memberID = p.pID 
+                        LEFT JOIN Location l ON cm.locationID = l.locationID 
+                        ORDER BY p.lastName");
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 function getPayments($pdo) {
-    $stmt = $pdo->query("SELECT p.*, m.firstName, m.lastName FROM Payments p LEFT JOIN ClubMembers m ON p.memberID = m.memberID ORDER BY p.paymentDate DESC");
+    $stmt = $pdo->query("SELECT p.*, per.firstName, per.lastName 
+                        FROM Payment p 
+                        LEFT JOIN ClubMember cm ON p.memberID = cm.memberID 
+                        LEFT JOIN Person per ON cm.memberID = per.pID 
+                        ORDER BY p.paymentDate DESC");
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 function getTeams($pdo) {
-    $stmt = $pdo->query("SELECT t.*, l.name as location_name FROM Teams t LEFT JOIN Location l ON t.locationID = l.locationID ORDER BY t.teamName");
+    $stmt = $pdo->query("SELECT t.*, l.name as location_name 
+                        FROM Team t 
+                        LEFT JOIN Location l ON t.locationID = l.locationID 
+                        ORDER BY t.teamName");
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 function getSessions($pdo) {
-    // Sessions table doesn't exist in your database, return empty array for now
-    return [];
+    try {
+        $stmt = $pdo->query("SELECT s.*, t1.teamName as team1_name, t2.teamName as team2_name 
+                             FROM Session s 
+                             LEFT JOIN Team t1 ON s.team1ID = t1.teamID 
+                             LEFT JOIN Team t2 ON s.team2ID = t2.teamID 
+                             ORDER BY s.sessionDate DESC, s.startTime DESC");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+function getHobbies($pdo) {
+    $stmt = $pdo->query("SELECT * FROM Hobby ORDER BY hobbyName");
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getMemberHobbies($pdo) {
+    $stmt = $pdo->query("SELECT mh.*, per.firstName, per.lastName, h.hobbyName 
+                        FROM MemberHobby mh 
+                        LEFT JOIN ClubMember cm ON mh.memberID = cm.memberID 
+                        LEFT JOIN Person per ON cm.memberID = per.pID 
+                        LEFT JOIN Hobby h ON mh.hobbyName = h.hobbyName 
+                        ORDER BY per.lastName, h.hobbyName");
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getWorkInfo($pdo) {
+    $stmt = $pdo->query("SELECT wi.*, per.firstName, per.lastName, l.name as location_name 
+                        FROM WorkInfo wi 
+                        LEFT JOIN Personnel p ON wi.employeeID = p.employeeID 
+                        LEFT JOIN Person per ON p.employeeID = per.pID 
+                        LEFT JOIN Location l ON wi.locationID = l.locationID 
+                        ORDER BY per.lastName, wi.startDate DESC");
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getYearlyPayments($pdo) {
+    try {
+        // Create a direct query instead of using the broken view
+        $stmt = $pdo->query("SELECT p.memberID, p.membershipYear, 
+                                   SUM(p.amount) as totalYearlyPayment,
+                                   per.firstName, per.lastName 
+                            FROM Payment p 
+                            LEFT JOIN ClubMember cm ON p.memberID = cm.memberID 
+                            LEFT JOIN Person per ON cm.memberID = per.pID 
+                            GROUP BY p.memberID, p.membershipYear 
+                            ORDER BY p.membershipYear DESC, per.lastName");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+function getEmails($pdo) {
+    try {
+        $stmt = $pdo->query("SELECT e.*, 
+                             CONCAT(p.firstName, ' ', p.lastName) as sender_name,
+                             CONCAT(m.firstName, ' ', m.lastName) as receiver_name
+                             FROM Emails e 
+                             LEFT JOIN Personnel p ON e.senderID = p.pID 
+                             LEFT JOIN ClubMembers m ON e.receiverID = m.memberID 
+                             ORDER BY e.sent_date DESC");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+function getTeamMembers($pdo) {
+    try {
+        $stmt = $pdo->query("SELECT tm.*, t.teamName, 
+                             CONCAT(m.firstName, ' ', m.lastName) as member_name
+                             FROM TeamMembers tm 
+                             LEFT JOIN Teams t ON tm.teamID = t.teamID 
+                             LEFT JOIN ClubMembers m ON tm.memberID = m.memberID 
+                             ORDER BY t.teamName, m.lastName");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+function saveHobby($pdo, $data) {
+    try {
+        $stmt = $pdo->prepare("INSERT INTO Hobbies (hobbyName) VALUES (?)");
+        $stmt->execute([$data['hobbyName']]);
+        return true;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+function saveMemberHobby($pdo, $data) {
+    try {
+        $stmt = $pdo->prepare("INSERT INTO MemberHobby (memberID, hobbyName) VALUES (?, ?)");
+        $stmt->execute([
+            $data['memberID'],
+            $data['hobbyName']
+        ]);
+        return true;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+function saveWorkInfo($pdo, $data) {
+    try {
+        $stmt = $pdo->prepare("INSERT INTO WorkInfo (pID, locationID, startDate, endDate) VALUES (?, ?, ?, ?)");
+        $stmt->execute([
+            $data['pID'],
+            $data['locationID'],
+            $data['startDate'],
+            $data['endDate'] ?: null
+        ]);
+        return true;
+    } catch (PDOException $e) {
+        return false;
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -260,6 +405,26 @@ function getSessions($pdo) {
         .header h1 {
             font-size: 24px;
             margin-bottom: 5px;
+        }
+
+        .header-buttons {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: #007cba;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #005a87;
+        }
+
+        .btn.active {
+            background: #28a745 !important;
+            color: white;
         }
 
         .nav-tabs {
@@ -514,6 +679,31 @@ function getSessions($pdo) {
             border-color: #f5c6cb;
         }
 
+        .placeholder-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .placeholder-box {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .placeholder-box h4 {
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+
+        .placeholder-box p {
+            color: #6c757d;
+            font-style: italic;
+        }
+
         @media (max-width: 768px) {
             .form-grid {
                 grid-template-columns: 1fr;
@@ -535,6 +725,10 @@ function getSessions($pdo) {
         <div class="header">
             <h1>Montréal Volleyball Club - Management System</h1>
             <p>COMP 353 Project</p>
+            <div class="header-buttons">
+                <button class="btn btn-primary" onclick="showMainSystem()">Main System</button>
+                <button class="btn btn-secondary" onclick="showEmptyTemplate()">Reports</button>
+            </div>
         </div>
 
         <div class="nav-tabs">
@@ -542,11 +736,12 @@ function getSessions($pdo) {
             <button class="nav-tab" onclick="showSection('personnel')">Personnel</button>
             <button class="nav-tab" onclick="showSection('family')">Family</button>
             <button class="nav-tab" onclick="showSection('members')">Members</button>
+            <button class="nav-tab" onclick="showSection('hobbies')">Hobbies</button>
             <button class="nav-tab" onclick="showSection('payments')">Payments</button>
             <button class="nav-tab" onclick="showSection('teams')">Teams</button>
+            <button class="nav-tab" onclick="showSection('workinfo')">Work History</button>
             <button class="nav-tab" onclick="showSection('sessions')">Sessions</button>
             <button class="nav-tab" onclick="showSection('emails')">Emails</button>
-            <button class="nav-tab" onclick="showSection('reports')">Reports</button>
         </div>
 
         <div class="content">
@@ -857,6 +1052,134 @@ function getSessions($pdo) {
                 </table>
             </div>
 
+            <!-- Hobbies Section -->
+            <div id="hobbies" class="section">
+                <div class="section-header">
+                    <h2 class="section-title">Hobbies Management</h2>
+                    <button class="btn" onclick="openModal('hobbyModal')">Add Hobby</button>
+                    <button class="btn btn-secondary" onclick="openModal('memberHobbyModal')">Assign Hobby to Member</button>
+                </div>
+                
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Filter by Member:</label>
+                        <select id="memberFilter" onchange="filterMemberHobbies()">
+                            <option value="">All Members</option>
+                            <?php
+                            $members = getMembers($pdo);
+                            foreach ($members as $member) {
+                                echo "<option value='" . $member['memberID'] . "'>" . htmlspecialchars($member['firstName'] . ' ' . $member['lastName']) . "</option>";
+                            }
+                            ?>
+                        </select>
+                    </div>
+                </div>
+                
+                <h3>Available Hobbies</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Hobby Name</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        $hobbies = getHobbies($pdo);
+                        foreach ($hobbies as $hobby) {
+                            echo "<tr>";
+                            echo "<td>" . htmlspecialchars($hobby['hobbyName']) . "</td>";
+                            echo "<td class='action-buttons'>";
+                            echo "<button class='edit-btn' onclick='editHobby(\"" . htmlspecialchars($hobby['hobbyName']) . "\")'>Edit</button>";
+                            echo "<button class='delete-btn' onclick='deleteHobby(\"" . htmlspecialchars($hobby['hobbyName']) . "\")'>Delete</button>";
+                            echo "</td>";
+                            echo "</tr>";
+                        }
+                        ?>
+                    </tbody>
+                </table>
+
+                <h3>Member Hobbies</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Member Name</th>
+                            <th>Hobby</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        $memberHobbies = getMemberHobbies($pdo);
+                        foreach ($memberHobbies as $memberHobby) {
+                            echo "<tr>";
+                            echo "<td>" . htmlspecialchars($memberHobby['firstName'] . ' ' . $memberHobby['lastName']) . "</td>";
+                            echo "<td>" . htmlspecialchars($memberHobby['hobbyName']) . "</td>";
+                            echo "<td class='action-buttons'>";
+                            echo "<button class='delete-btn' onclick='removeMemberHobby(" . $memberHobby['memberID'] . ", \"" . htmlspecialchars($memberHobby['hobbyName']) . "\")'>Remove</button>";
+                            echo "</td>";
+                            echo "</tr>";
+                        }
+                        ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Work History Section -->
+            <div id="workinfo" class="section">
+                <div class="section-header">
+                    <h2 class="section-title">Work History Management</h2>
+                    <button class="btn" onclick="openModal('workInfoModal')">Add Work Assignment</button>
+                </div>
+                
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Filter by Personnel:</label>
+                        <select id="personnelFilter" onchange="filterWorkInfo()">
+                            <option value="">All Personnel</option>
+                            <?php
+                            $personnel = getPersonnel($pdo);
+                            foreach ($personnel as $person) {
+                                echo "<option value='" . $person['pID'] . "'>" . htmlspecialchars($person['firstName'] . ' ' . $person['lastName']) . "</option>";
+                            }
+                            ?>
+                        </select>
+                    </div>
+                </div>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Personnel Name</th>
+                            <th>Location</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        $workInfo = getWorkInfo($pdo);
+                        foreach ($workInfo as $work) {
+                            $status = $work['endDate'] ? 'Completed' : 'Active';
+                            echo "<tr>";
+                            echo "<td>" . htmlspecialchars($work['firstName'] . ' ' . $work['lastName']) . "</td>";
+                            echo "<td>" . htmlspecialchars($work['location_name'] ?? 'N/A') . "</td>";
+                            echo "<td>" . htmlspecialchars($work['startDate']) . "</td>";
+                            echo "<td>" . htmlspecialchars($work['endDate'] ?? 'Ongoing') . "</td>";
+                            echo "<td>" . $status . "</td>";
+                            echo "<td class='action-buttons'>";
+                            echo "<button class='edit-btn' onclick='editWorkInfo(" . $work['pID'] . ", " . $work['locationID'] . ", \"" . $work['startDate'] . "\")'>Edit</button>";
+                            echo "<button class='delete-btn' onclick='deleteWorkInfo(" . $work['pID'] . ", " . $work['locationID'] . ", \"" . $work['startDate'] . "\")'>Delete</button>";
+                            echo "</td>";
+                            echo "</tr>";
+                        }
+                        ?>
+                    </tbody>
+                </table>
+            </div>
+
             <!-- Sessions Section -->
             <div id="sessions" class="section">
                 <div class="section-header">
@@ -894,19 +1217,27 @@ function getSessions($pdo) {
                     <tbody>
                         <?php
                         $sessions = getSessions($pdo);
-                        foreach ($sessions as $session) {
-                            echo "<tr>";
-                            echo "<td>" . htmlspecialchars($session['type']) . "</td>";
-                            echo "<td>" . htmlspecialchars($session['date'] . ' ' . $session['time']) . "</td>";
-                            echo "<td>" . htmlspecialchars($session['location_name'] ?? 'N/A') . "</td>";
-                            echo "<td>Team 1 vs Team 2</td>"; // TODO: Get actual team names
-                            echo "<td>" . htmlspecialchars($session['coach_name'] ?? 'N/A') . "</td>";
-                            echo "<td>" . htmlspecialchars($session['score'] ?? 'N/A') . "</td>";
-                            echo "<td class='action-buttons'>";
-                            echo "<button class='edit-btn' onclick='editSession(" . $session['id'] . ")'>Edit</button>";
-                            echo "<button class='delete-btn' onclick='deleteSession(" . $session['id'] . ")'>Delete</button>";
-                            echo "</td>";
-                            echo "</tr>";
+                        if (empty($sessions)) {
+                            echo "<tr><td colspan='7' style='text-align: center;'>No sessions found.</td></tr>";
+                        } else {
+                            foreach ($sessions as $session) {
+                                $score = $session['team1Score'] && $session['team2Score'] ? 
+                                        $session['team1Score'] . '-' . $session['team2Score'] : 'N/A';
+                                $teams = $session['team1_name'] . ' vs ' . ($session['team2_name'] ?? 'TBD');
+                                
+                                echo "<tr>";
+                                echo "<td>" . htmlspecialchars($session['sessionType']) . "</td>";
+                                echo "<td>" . htmlspecialchars($session['sessionDate'] . ' ' . $session['startTime']) . "</td>";
+                                echo "<td>" . htmlspecialchars($session['address']) . "</td>";
+                                echo "<td>" . htmlspecialchars($teams) . "</td>";
+                                echo "<td>N/A</td>"; // Coach info not available in current structure
+                                echo "<td>" . htmlspecialchars($score) . "</td>";
+                                echo "<td class='action-buttons'>";
+                                echo "<button class='edit-btn' onclick='editSession(" . $session['sessionID'] . ")'>Edit</button>";
+                                echo "<button class='delete-btn' onclick='deleteSession(" . $session['sessionID'] . ")'>Delete</button>";
+                                echo "</td>";
+                                echo "</tr>";
+                            }
                         }
                         ?>
                     </tbody>
@@ -928,62 +1259,46 @@ function getSessions($pdo) {
                             <th>Subject</th>
                             <th>Preview</th>
                             <th>Sent Date</th>
+                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Email data will be populated from SQL server -->
+                        <?php
+                        $emails = getEmails($pdo);
+                        if (empty($emails)) {
+                            echo "<tr><td colspan='7' style='text-align: center;'>No emails found. Use 'Generate Session Emails' to create sample emails.</td></tr>";
+                        } else {
+                            foreach ($emails as $email) {
+                                echo "<tr>";
+                                echo "<td>" . htmlspecialchars($email['sender_name'] ?? 'System') . "</td>";
+                                echo "<td>" . htmlspecialchars($email['receiver_name'] ?? 'All Members') . "</td>";
+                                echo "<td>" . htmlspecialchars($email['subject']) . "</td>";
+                                echo "<td>" . htmlspecialchars(substr($email['body'], 0, 50)) . "...</td>";
+                                echo "<td>" . htmlspecialchars($email['sent_date']) . "</td>";
+                                echo "<td>" . htmlspecialchars(ucfirst($email['status'])) . "</td>";
+                                echo "<td class='action-buttons'>";
+                                echo "<button class='view-btn' onclick='viewEmail(" . $email['emailID'] . ")'>View</button>";
+                                echo "<button class='delete-btn' onclick='deleteEmail(" . $email['emailID'] . ")'>Delete</button>";
+                                echo "</td>";
+                                echo "</tr>";
+                            }
+                        }
+                        ?>
                     </tbody>
                 </table>
             </div>
 
-            <!-- Reports Section -->
-            <div id="reports" class="section">
+            <!-- Question Section -->
+            <div id="empty-template" class="section">
                 <div class="section-header">
-                    <h2 class="section-title">Reports & Analytics</h2>
-                    <button class="btn btn-secondary" onclick="exportReport()">Export Report</button>
+                    <h2 class="section-title">Empty Template</h2>
+                    <p>This is an empty template for future development.</p>
                 </div>
                 
-                <div class="filters">
-                    <div class="filter-group">
-                        <label>Report Type:</label>
-                        <select id="reportType" onchange="generateReport()">
-                            <option value="members">Member Statistics</option>
-                            <option value="locations">Location Analysis</option>
-                            <option value="family">Family Associations</option>
-                            <option value="sessions">Session Logs</option>
-                            <option value="inactive">Inactive Members</option>
-                            <option value="goalkeepers">Goalkeeper-Only Members</option>
-                            <option value="unassigned">Never-Assigned Players</option>
-                            <option value="volunteers">Volunteer Families</option>
-                            <option value="winners">Undefeated Members</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>Location Filter:</label>
-                        <select>
-                            <option value="">All Locations</option>
-                            <?php
-                            foreach ($locations as $location) {
-                                echo "<option value='" . $location['locationID'] . "'>" . htmlspecialchars($location['name']) . "</option>";
-                            }
-                            ?>
-                        </select>
-                    </div>
-                </div>
-                
-                <div id="reportResults">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Report Data</th>
-                                <th>Value</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Report data will be populated from SQL server -->
-                        </tbody>
-                    </table>
+                <div class="content">
+                    <h3>Welcome to the Empty Template</h3>
+                    <p>This section is currently empty and ready for new features to be added.</p>
                 </div>
             </div>
         </div>

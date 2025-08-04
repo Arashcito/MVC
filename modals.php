@@ -165,11 +165,17 @@
             <input type="hidden" name="action" value="save_family">
             <div class="form-grid">
                 <div class="form-group">
-                    <label>Type:</label>
-                    <select name="type" required>
-                        <option value="">Select Type</option>
-                        <option value="Primary">Primary</option>
-                        <option value="Secondary">Secondary</option>
+                    <label>Relationship Type:</label>
+                    <select name="relationshipType" required>
+                        <option value="">Select Relationship</option>
+                        <option value="Father">Father</option>
+                        <option value="Mother">Mother</option>
+                        <option value="Grandfather">Grandfather</option>
+                        <option value="Grandmother">Grandmother</option>
+                        <option value="Tutor">Tutor</option>
+                        <option value="Partner">Partner</option>
+                        <option value="Friend">Friend</option>
+                        <option value="Other">Other</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -255,12 +261,24 @@
                     <input type="date" name="dob" required>
                 </div>
                 <div class="form-group">
-                    <label>Height (ft'in"):</label>
-                    <input type="text" name="height" placeholder="e.g., 5'10&quot;">
+                    <label>Age:</label>
+                    <input type="number" name="age" required>
                 </div>
                 <div class="form-group">
-                    <label>Weight (lbs):</label>
-                    <input type="number" name="weight">
+                    <label>Height (cm):</label>
+                    <input type="number" name="height" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Weight (kg):</label>
+                    <input type="number" name="weight" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Social Security Number:</label>
+                    <input type="text" name="ssn" required placeholder="XXX-XX-XXXX">
+                </div>
+                <div class="form-group">
+                    <label>Medicare Card Number:</label>
+                    <input type="text" name="medicare">
                 </div>
                 <div class="form-group">
                     <label>Location:</label>
@@ -283,11 +301,27 @@
                 </div>
                 <div class="form-group">
                     <label>Address:</label>
-                    <input type="text" name="address">
+                    <input type="text" name="address" required>
                 </div>
                 <div class="form-group">
-                    <label>Hobbies:</label>
-                    <textarea name="hobbies" rows="3"></textarea>
+                    <label>City:</label>
+                    <input type="text" name="city" required>
+                </div>
+                <div class="form-group">
+                    <label>Province:</label>
+                    <input type="text" name="province" required>
+                </div>
+                <div class="form-group">
+                    <label>Postal Code:</label>
+                    <input type="text" name="postal_code" required>
+                </div>
+                <div class="form-group">
+                    <label>Status:</label>
+                    <select name="status" required>
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                        <option value="Suspended">Suspended</option>
+                    </select>
                 </div>
             </div>
             <!-- For Minor Members -->
@@ -296,7 +330,7 @@
                 <div class="form-grid">
                     <div class="form-group">
                         <label>Family Member:</label>
-                        <select name="family_id">
+                        <select name="family_member_id">
                             <option value="">Select Family Member</option>
                             <?php
                             $familyMembers = getFamilyMembers($pdo);
@@ -407,9 +441,12 @@
                     <select name="head_coach_id" required>
                         <option value="">Select Coach</option>
                         <?php
-                        $coaches = $pdo->query("SELECT pID, firstName, lastName FROM Personnel WHERE role IN ('Coach', 'AssistantCoach')")->fetchAll(PDO::FETCH_ASSOC);
+                        $coaches = $pdo->query("SELECT p.employeeID, per.firstName, per.lastName 
+                                               FROM Personnel p 
+                                               LEFT JOIN Person per ON p.employeeID = per.pID 
+                                               WHERE p.role IN ('Coach', 'AssistantCoach')")->fetchAll(PDO::FETCH_ASSOC);
                         foreach ($coaches as $coach) {
-                            echo "<option value='" . $coach['pID'] . "'>" . htmlspecialchars($coach['firstName'] . ' ' . $coach['lastName']) . "</option>";
+                            echo "<option value='" . $coach['employeeID'] . "'>" . htmlspecialchars($coach['firstName'] . ' ' . $coach['lastName']) . "</option>";
                         }
                         ?>
                     </select>
@@ -508,7 +545,7 @@
                         <option value="">Select Coach</option>
                         <?php
                         foreach ($coaches as $coach) {
-                            echo "<option value='" . $coach['pID'] . "'>" . htmlspecialchars($coach['firstName'] . ' ' . $coach['lastName']) . "</option>";
+                            echo "<option value='" . $coach['employeeID'] . "'>" . htmlspecialchars($coach['firstName'] . ' ' . $coach['lastName']) . "</option>";
                         }
                         ?>
                     </select>
@@ -520,6 +557,112 @@
             </div>
             <button type="submit" class="btn">Schedule Session</button>
             <button type="button" class="btn btn-secondary" onclick="closeModal('sessionModal')">Cancel</button>
+        </form>
+    </div>
+</div>
+
+<!-- Hobby Modal -->
+<div id="hobbyModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('hobbyModal')">&times;</span>
+        <h3>Add New Hobby</h3>
+        <form method="POST" action="">
+            <input type="hidden" name="action" value="save_hobby">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Hobby Name:</label>
+                    <input type="text" name="hobbyName" required placeholder="e.g., Swimming, Reading, Gaming">
+                </div>
+            </div>
+            <button type="submit" class="btn">Save Hobby</button>
+            <button type="button" class="btn btn-secondary" onclick="closeModal('hobbyModal')">Cancel</button>
+        </form>
+    </div>
+</div>
+
+<!-- Member Hobby Modal -->
+<div id="memberHobbyModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('memberHobbyModal')">&times;</span>
+        <h3>Assign Hobby to Member</h3>
+        <form method="POST" action="">
+            <input type="hidden" name="action" value="save_member_hobby">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Member:</label>
+                    <select name="memberID" required>
+                        <option value="">Select Member</option>
+                        <?php
+                        $members = getMembers($pdo);
+                        foreach ($members as $member) {
+                            echo "<option value='" . $member['memberID'] . "'>" . htmlspecialchars($member['firstName'] . ' ' . $member['lastName']) . "</option>";
+                        }
+                        ?>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Hobby:</label>
+                    <select name="hobbyName" required>
+                        <option value="">Select Hobby</option>
+                        <?php
+                        $hobbies = getHobbies($pdo);
+                        foreach ($hobbies as $hobby) {
+                            echo "<option value='" . htmlspecialchars($hobby['hobbyName']) . "'>" . htmlspecialchars($hobby['hobbyName']) . "</option>";
+                        }
+                        ?>
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn">Assign Hobby</button>
+            <button type="button" class="btn btn-secondary" onclick="closeModal('memberHobbyModal')">Cancel</button>
+        </form>
+    </div>
+</div>
+
+<!-- Work Info Modal -->
+<div id="workInfoModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('workInfoModal')">&times;</span>
+        <h3>Add Work Assignment</h3>
+        <form method="POST" action="">
+            <input type="hidden" name="action" value="save_workinfo">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Personnel:</label>
+                    <select name="employeeID" required>
+                        <option value="">Select Personnel</option>
+                        <?php
+                        $personnel = getPersonnel($pdo);
+                        foreach ($personnel as $person) {
+                            echo "<option value='" . $person['employeeID'] . "'>" . htmlspecialchars($person['firstName'] . ' ' . $person['lastName']) . "</option>";
+                        }
+                        ?>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Location:</label>
+                    <select name="locationID" required>
+                        <option value="">Select Location</option>
+                        <?php
+                        $locations = getLocations($pdo);
+                        foreach ($locations as $location) {
+                            echo "<option value='" . $location['locationID'] . "'>" . htmlspecialchars($location['name']) . "</option>";
+                        }
+                        ?>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Start Date:</label>
+                    <input type="date" name="startDate" required>
+                </div>
+                <div class="form-group">
+                    <label>End Date (Optional):</label>
+                    <input type="date" name="endDate">
+                    <small>Leave empty if assignment is ongoing</small>
+                </div>
+            </div>
+            <button type="submit" class="btn">Save Work Assignment</button>
+            <button type="button" class="btn btn-secondary" onclick="closeModal('workInfoModal')">Cancel</button>
         </form>
     </div>
 </div> 
