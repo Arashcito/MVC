@@ -42,53 +42,80 @@
     }
 
     function editPersonnel(id) {
+        console.log('editPersonnel called with ID:', id);
         fetch('ajax_handler.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: 'action=get_personnel&id=' + id
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
         .then(data => {
+            console.log('Response data:', data);
             if (data.success) {
                 populatePersonnelForm(data.data);
                 openModal('personnelModal');
             } else {
                 alert('Error: ' + data.message);
             }
+        })
+        .catch(error => {
+            console.error('Error in editPersonnel:', error);
+            alert('Error: ' + error.message);
         });
     }
 
     function editFamily(id) {
+        console.log('editFamily called with ID:', id);
         fetch('ajax_handler.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: 'action=get_family&id=' + id
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
         .then(data => {
+            console.log('Response data:', data);
             if (data.success) {
                 populateFamilyForm(data.data);
                 openModal('familyModal');
             } else {
                 alert('Error: ' + data.message);
             }
+        })
+        .catch(error => {
+            console.error('Error in editFamily:', error);
+            alert('Error: ' + error.message);
         });
     }
 
     function editMember(id) {
+        console.log('editMember called with ID:', id);
         fetch('ajax_handler.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: 'action=get_member&id=' + id
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
         .then(data => {
+            console.log('Response data:', data);
             if (data.success) {
                 populateMemberForm(data.data);
                 openModal('memberModal');
             } else {
                 alert('Error: ' + data.message);
             }
+        })
+        .catch(error => {
+            console.error('Error in editMember:', error);
+            alert('Error: ' + error.message);
         });
     }
 
@@ -127,19 +154,28 @@
     }
 
     function editSession(id) {
+        console.log('editSession called with ID:', id);
         fetch('ajax_handler.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: 'action=get_session&id=' + id
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
         .then(data => {
+            console.log('Response data:', data);
             if (data.success) {
                 populateSessionForm(data.data);
                 openModal('sessionModal');
             } else {
                 alert('Error: ' + data.message);
             }
+        })
+        .catch(error => {
+            console.error('Error in editSession:', error);
+            alert('Error: ' + error.message);
         });
     }
 
@@ -178,73 +214,7 @@
     }
 
     // New edit functions for additional tables
-    function editPostalArea(postalCode) {
-        fetch('ajax_handler.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: 'action=get_postalarea&postalCode=' + encodeURIComponent(postalCode)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                populatePostalAreaForm(data.data);
-                openModal('postalAreaModal');
-            } else {
-                alert('Error: ' + data.message);
-            }
-        });
-    }
 
-    function editLocationPhone(locationID, phone) {
-        fetch('ajax_handler.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: 'action=get_locationphone&locationID=' + locationID + '&phone=' + encodeURIComponent(phone)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                populateLocationPhoneForm(data.data);
-                openModal('locationPhoneModal');
-            } else {
-                alert('Error: ' + data.message);
-            }
-        });
-    }
-
-    function editFamilyHistory(memberID, familyMemID, startDate) {
-        fetch('ajax_handler.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: 'action=get_familyhistory&memberID=' + memberID + '&familyMemID=' + familyMemID + '&startDate=' + encodeURIComponent(startDate)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                populateFamilyHistoryForm(data.data);
-                openModal('familyHistoryModal');
-            } else {
-                alert('Error: ' + data.message);
-            }
-        });
-    }
-
-    function editTeamMember(teamID, memberID, roleInTeam) {
-        fetch('ajax_handler.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: 'action=get_teammember&teamID=' + teamID + '&memberID=' + memberID + '&roleInTeam=' + encodeURIComponent(roleInTeam)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                populateTeamMemberForm(data.data);
-                openModal('teamMemberModal');
-            } else {
-                alert('Error: ' + data.message);
-            }
-        });
-    }
 
     // Delete functions
     function deleteLocation(id) {
@@ -419,81 +389,7 @@
     }
 
     // New delete functions for additional tables
-    function deletePostalArea(postalCode) {
-        if (confirm('Are you sure you want to delete this postal area?')) {
-            fetch('ajax_handler.php', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: 'action=delete_postalarea&postalCode=' + encodeURIComponent(postalCode)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Postal area deleted successfully');
-                    location.reload();
-                } else {
-                    alert('Error: ' + data.message);
-                }
-            });
-        }
-    }
 
-    function deleteLocationPhone(locationID, phone) {
-        if (confirm('Are you sure you want to delete this location phone?')) {
-            fetch('ajax_handler.php', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: 'action=delete_locationphone&locationID=' + locationID + '&phone=' + encodeURIComponent(phone)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Location phone deleted successfully');
-                    location.reload();
-                } else {
-                    alert('Error: ' + data.message);
-                }
-            });
-        }
-    }
-
-    function deleteFamilyHistory(memberID, familyMemID, startDate) {
-        if (confirm('Are you sure you want to delete this family history record?')) {
-            fetch('ajax_handler.php', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: 'action=delete_familyhistory&memberID=' + memberID + '&familyMemID=' + familyMemID + '&startDate=' + encodeURIComponent(startDate)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Family history record deleted successfully');
-                    location.reload();
-                } else {
-                    alert('Error: ' + data.message);
-                }
-            });
-        }
-    }
-
-    function deleteTeamMember(teamID, memberID) {
-        if (confirm('Are you sure you want to remove this member from the team?')) {
-            fetch('ajax_handler.php', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: 'action=delete_teammember&teamID=' + teamID + '&memberID=' + memberID
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Team member removed successfully');
-                    location.reload();
-                } else {
-                    alert('Error: ' + data.message);
-                }
-            });
-        }
-    }
 
     function removeMemberHobby(memberID, hobbyName) {
         if (confirm('Are you sure you want to remove this hobby from the member?')) {
@@ -512,6 +408,46 @@
                 }
             });
         }
+    }
+
+    function viewPayment(memberID) {
+        fetch('ajax_handler.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: 'action=get_payment_details&memberID=' + memberID
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Create a simple modal to display payment details
+                let modal = document.createElement('div');
+                modal.className = 'modal';
+                modal.style.display = 'block';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                        <h3>Payment Details</h3>
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            ${data.data.map(payment => `
+                                <div style="border: 1px solid #ddd; padding: 10px; margin: 5px 0; border-radius: 5px;">
+                                    <strong>Amount:</strong> $${payment.amount}<br>
+                                    <strong>Method:</strong> ${payment.paymentMethod}<br>
+                                    <strong>Date:</strong> ${payment.paymentDate}<br>
+                                    <strong>Type:</strong> ${payment.type}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading payment details');
+        });
     }
 
     // Form population functions
@@ -551,6 +487,7 @@
         document.querySelector('input[name="email"]').value = data.email || '';
         document.querySelector('select[name="role"]').value = data.role || '';
         document.querySelector('select[name="mandate"]').value = data.mandate || '';
+        document.querySelector('select[name="location_id"]').value = data.locationID || '';
         
         let hiddenField = document.querySelector('input[name="pID"]');
         if (!hiddenField) {
@@ -559,16 +496,23 @@
             hiddenField.name = 'pID';
             document.querySelector('#personnelModal form').appendChild(hiddenField);
         }
-        hiddenField.value = data.pID || '';
+        hiddenField.value = data.employeeID || '';
     }
 
     function populateFamilyForm(data) {
         document.querySelector('input[name="first_name"]').value = data.firstName || '';
         document.querySelector('input[name="last_name"]').value = data.lastName || '';
-        document.querySelector('select[name="type"]').value = data.relationshipType || '';
+        document.querySelector('select[name="relationshipType"]').value = data.relationshipType || '';
+        document.querySelector('input[name="dob"]').value = data.dob || '';
+        document.querySelector('input[name="ssn"]').value = data.ssn || '';
+        document.querySelector('input[name="medicare"]').value = data.medicare || '';
         document.querySelector('input[name="phone"]').value = data.phone || '';
         document.querySelector('input[name="email"]').value = data.email || '';
         document.querySelector('input[name="address"]').value = data.address || '';
+        document.querySelector('input[name="city"]').value = data.city || '';
+        document.querySelector('input[name="province"]').value = data.province || '';
+        document.querySelector('input[name="postal_code"]').value = data.postalCode || '';
+        document.querySelector('select[name="location_id"]').value = data.locationID || '';
         
         let hiddenField = document.querySelector('input[name="familyMemID"]');
         if (!hiddenField) {
@@ -584,10 +528,20 @@
         document.querySelector('input[name="first_name"]').value = data.firstName || '';
         document.querySelector('input[name="last_name"]').value = data.lastName || '';
         document.querySelector('input[name="dob"]').value = data.dob || '';
+        document.querySelector('input[name="age"]').value = data.age || '';
         document.querySelector('input[name="height"]').value = data.height || '';
         document.querySelector('input[name="weight"]').value = data.weight || '';
-        document.querySelector('select[name="locationID"]').value = data.locationID || '';
+        document.querySelector('input[name="ssn"]').value = data.ssn || '';
+        document.querySelector('input[name="medicare"]').value = data.medicare || '';
+        document.querySelector('input[name="phone"]').value = data.phone || '';
+        document.querySelector('input[name="email"]').value = data.email || '';
+        document.querySelector('input[name="address"]').value = data.address || '';
+        document.querySelector('input[name="city"]').value = data.city || '';
+        document.querySelector('input[name="province"]').value = data.province || '';
+        document.querySelector('input[name="postal_code"]').value = data.postalCode || '';
+        document.querySelector('select[name="location_id"]').value = data.locationID || '';
         document.querySelector('select[name="status"]').value = data.status || 'Active';
+        document.querySelector('select[name="family_member_id"]').value = data.familyMemID || '';
         
         let hiddenField = document.querySelector('input[name="memberID"]');
         if (!hiddenField) {
@@ -619,8 +573,9 @@
 
     function populateTeamForm(data) {
         document.querySelector('input[name="name"]').value = data.teamName || '';
-        document.querySelector('select[name="gender"]').value = data.teamType || '';
+        document.querySelector('select[name="gender"]').value = data.gender || '';
         document.querySelector('select[name="location_id"]').value = data.locationID || '';
+        document.querySelector('select[name="head_coach_id"]').value = data.headCoachID || '';
         
         let hiddenField = document.querySelector('input[name="teamID"]');
         if (!hiddenField) {
@@ -633,14 +588,19 @@
     }
 
     function populateSessionForm(data) {
-        document.querySelector('select[name="type"]').value = data.type || '';
-        document.querySelector('input[name="date"]').value = data.date || '';
-        document.querySelector('input[name="time"]').value = data.time || '';
-        document.querySelector('select[name="location_id"]').value = data.locationID || '';
+        document.querySelector('select[name="type"]').value = data.sessionType || '';
+        document.querySelector('input[name="date"]').value = data.sessionDate || '';
+        document.querySelector('input[name="time"]').value = data.startTime || '';
+        document.querySelector('input[name="address"]').value = data.address || '';
         document.querySelector('select[name="team1_id"]').value = data.team1ID || '';
         document.querySelector('select[name="team2_id"]').value = data.team2ID || '';
-        document.querySelector('select[name="coach_id"]').value = data.coachID || '';
-        document.querySelector('input[name="score"]').value = data.score || '';
+        
+        // Combine scores if both exist
+        if (data.team1Score !== null && data.team2Score !== null) {
+            document.querySelector('input[name="score"]').value = data.team1Score + '-' + data.team2Score;
+        } else {
+            document.querySelector('input[name="score"]').value = '';
+        }
         
         let hiddenField = document.querySelector('input[name="sessionID"]');
         if (!hiddenField) {
@@ -701,66 +661,7 @@
         oldStartDateField.value = data.startDate || '';
     }
 
-    // New form population functions for additional tables
-    function populatePostalAreaForm(data) {
-        document.querySelector('input[name="postalCode"]').value = data.postalCode || '';
-        document.querySelector('input[name="city"]').value = data.city || '';
-        document.querySelector('input[name="province"]').value = data.province || '';
-        
-        let hiddenField = document.querySelector('input[name="postalAreaID"]');
-        if (!hiddenField) {
-            hiddenField = document.createElement('input');
-            hiddenField.type = 'hidden';
-            hiddenField.name = 'postalAreaID';
-            document.querySelector('#postalAreaModal form').appendChild(hiddenField);
-        }
-        hiddenField.value = data.postalAreaID || '';
-    }
 
-    function populateLocationPhoneForm(data) {
-        document.querySelector('select[name="locationID"]').value = data.locationID || '';
-        document.querySelector('input[name="phone"]').value = data.phone || '';
-        
-        let hiddenField = document.querySelector('input[name="locationPhoneID"]');
-        if (!hiddenField) {
-            hiddenField = document.createElement('input');
-            hiddenField.type = 'hidden';
-            hiddenField.name = 'locationPhoneID';
-            document.querySelector('#locationPhoneModal form').appendChild(hiddenField);
-        }
-        hiddenField.value = data.locationPhoneID || '';
-    }
-
-    function populateFamilyHistoryForm(data) {
-        document.querySelector('select[name="memberID"]').value = data.memberID || '';
-        document.querySelector('select[name="familyMemID"]').value = data.familyMemID || '';
-        document.querySelector('input[name="startDate"]').value = data.startDate || '';
-        document.querySelector('input[name="endDate"]').value = data.endDate || '';
-        
-        let hiddenField = document.querySelector('input[name="familyHistoryID"]');
-        if (!hiddenField) {
-            hiddenField = document.createElement('input');
-            hiddenField.type = 'hidden';
-            hiddenField.name = 'familyHistoryID';
-            document.querySelector('#familyHistoryModal form').appendChild(hiddenField);
-        }
-        hiddenField.value = data.familyHistoryID || '';
-    }
-
-    function populateTeamMemberForm(data) {
-        document.querySelector('select[name="teamID"]').value = data.teamID || '';
-        document.querySelector('select[name="memberID"]').value = data.memberID || '';
-        document.querySelector('select[name="roleInTeam"]').value = data.roleInTeam || '';
-        
-        let hiddenField = document.querySelector('input[name="teamMemberID"]');
-        if (!hiddenField) {
-            hiddenField = document.createElement('input');
-            hiddenField.type = 'hidden';
-            hiddenField.name = 'teamMemberID';
-            document.querySelector('#teamMemberModal form').appendChild(hiddenField);
-        }
-        hiddenField.value = data.teamMemberID || '';
-    }
 
     // Search functionality
     function performSearch(section) {
