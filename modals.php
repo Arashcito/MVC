@@ -313,7 +313,7 @@
     <div class="modal-content">
         <span class="close" onclick="closeModal('paymentModal')">&times;</span>
         <h3>Record Payment</h3>
-        <form method="POST" action="">
+        <form method="POST" action="<?php echo $_SERVER['PHP_SELF']; ?>">
             <input type="hidden" name="action" value="save_payment">
             <div class="form-grid">
                 <div class="form-group">

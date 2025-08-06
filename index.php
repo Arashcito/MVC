@@ -565,6 +565,9 @@ function saveWorkInfo($pdo, $data) {
 
 function savePayment($pdo, $data) {
     try {
+        // Debug: Log the received data
+        error_log("Payment save data: " . print_r($data, true));
+        
         $stmt = $pdo->prepare("INSERT INTO Payment (memberID, amount, method, paymentDate, membershipYear, installmentNo) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->execute([
             $data['member_id'],
