@@ -253,6 +253,9 @@ function saveFamily($pdo, $data) {
 
 function saveMember($pdo, $data) {
     try {
+        // Debug: Log the received data
+        error_log("Member save data: " . print_r($data, true));
+        
         $pdo->beginTransaction();
         
         // Calculate member type based on age from DOB
@@ -287,7 +290,7 @@ function saveMember($pdo, $data) {
                 $data['height'],
                 $data['weight'],
                 $data['dateJoined'] ?? date('Y-m-d'),
-                $data['family_member_id'] ?: null,
+                $data['family_member_id'],
                 $data['memberID']
             ]);
         } else {
@@ -317,7 +320,7 @@ function saveMember($pdo, $data) {
                 $data['height'],
                 $data['weight'],
                 $data['dateJoined'] ?? date('Y-m-d'),
-                $data['family_member_id'] ?: null
+                $data['family_member_id']
             ]);
         }
         
