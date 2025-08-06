@@ -757,13 +757,7 @@ function saveTeam($pdo, $data) {
             border-color: #007cba;
         }
 
-        .search-bar {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ccc;
-            margin-bottom: 15px;
-            font-size: 14px;
-        }
+
 
         .data-table {
             width: 100%;
@@ -963,7 +957,7 @@ function saveTeam($pdo, $data) {
                     <button class="btn" onclick="openModal('locationModal')">Add Location</button>
                 </div>
                 
-                <input type="text" class="search-bar" placeholder="Search locations...">
+
                 
                 <table class="data-table">
                     <thead>
@@ -1004,7 +998,7 @@ function saveTeam($pdo, $data) {
                     <button class="btn" onclick="openModal('personnelModal')">Add Personnel</button>
                 </div>
                 
-                <input type="text" class="search-bar" placeholder="Search personnel...">
+
                 
                 <table class="data-table">
                     <thead>
@@ -1051,7 +1045,7 @@ function saveTeam($pdo, $data) {
                     <button class="btn" onclick="openModal('familyModal')">Add Family Member</button>
                 </div>
                 
-                <input type="text" class="search-bar" placeholder="Search family members...">
+
                 
                 <table class="data-table">
                     <thead>
@@ -1127,7 +1121,7 @@ function saveTeam($pdo, $data) {
                     </div>
                 </div>
                 
-                <input type="text" class="search-bar" placeholder="Search members...">
+
                 
                 <table class="data-table">
                     <thead>
@@ -1275,7 +1269,7 @@ function saveTeam($pdo, $data) {
                     <button class="btn" onclick="openModal('teamModal')">Create Team</button>
                 </div>
                 
-                <input type="text" class="search-bar" placeholder="Search teams...">
+
                 
                 <table class="data-table">
                     <thead>
@@ -1318,7 +1312,7 @@ function saveTeam($pdo, $data) {
                     <button class="btn" onclick="openModal('paymentModal')">Record Payment</button>
                 </div>
                 
-                <input type="text" class="search-bar" placeholder="Search payments...">
+
                 
                 <table class="data-table">
                     <thead>
