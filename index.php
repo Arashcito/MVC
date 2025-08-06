@@ -1896,40 +1896,16 @@ function getFamilyHistory($pdo) {
 
 
 
-            <!-- Question Section -->
-            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-            <button onclick="handleQuestion(7)">Question 7</button>
-            <button onclick="handleQuestion(8)">Question 8</button>
-            <button onclick="handleQuestion(9)">Question 9</button>
-            <button onclick="handleQuestion(10)">Question 10</button>
-            <button onclick="handleQuestion(11)">Question 11</button>
-            <button onclick="handleQuestion(12)">Question 12</button>
-            <button onclick="handleQuestion(13)">Question 13</button>
-            <button onclick="handleQuestion(14)">Question 14</button>
-            <button onclick="handleQuestion(15)">Question 15</button>
-            <button onclick="handleQuestion(16)">Question 16</button>
-            <button onclick="handleQuestion(17)">Question 17</button>
-            <button onclick="handleQuestion(18)">Question 18</button>
-            <button onclick="handleQuestion(19)">Question 19</button>
-            </div>
-
-            <script>
-            function handleQuestion(qNum) {
-                alert("You clicked Question " + qNum);
-                // Replace this with your real logic (e.g. AJAX or navigation)
-            }
-            </script>
 
 
-            <div class="content">
-                <?php
-                // Get location list for dropdown
-                $locationQuery = $pdo->query("SELECT locationID, name FROM Location");
-                $locations = $locationQuery->fetchAll(PDO::FETCH_ASSOC);
 
-                // Get selected locationID from GET, default to first in list
-                $selectedLocationID = $_GET['locationID'] ?? ($locations[0]['locationID'] ?? null);
-                ?>
+            <div id="reports" class="section">
+                <div class="section-header">
+                    <h2 class="section-title">Reports: Qualified Family Members</h2>
+                    
+                </div>
+
+                
 
                 <form method="GET" style="margin-bottom: 20px;">
                     <label for="locationID"><strong>Select Location:</strong></label>
@@ -1944,7 +1920,6 @@ function getFamilyHistory($pdo) {
                 </form>
 
                 <?php
-                // Query based on selected location
                 if ($selectedLocationID) {
                     $results = getQualifiedFamilyMembers($pdo, $selectedLocationID);
                 }
@@ -1952,21 +1927,20 @@ function getFamilyHistory($pdo) {
 
                 <h3>Qualified Family Members (Head Coaches + Active Members)</h3>
                 <table>
-                <thead>
-                    <tr>
-                        <th>First Name</th>
-                        <th>Last Name</th>
-                        <th>Phone</th>
-                        <th>Email</th>
-                        <th>Location</th>
-                        <th>Role</th>
-                        <th># of Minor Members</th>
-                    </tr>
-                </thead>
-
+                    <thead>
+                        <tr>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Phone</th>
+                            <th>Email</th>
+                            <th>Location</th>
+                            <th>Role</th>
+                            <th># of Minor Members</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         <?php if (empty($results)): ?>
-                            <tr><td colspan="3">No results found for this location.</td></tr>
+                            <tr><td colspan="7">No results found for this location.</td></tr>
                         <?php else: ?>
                             <?php foreach ($results as $row): ?>
                                 <tr>
@@ -1981,23 +1955,12 @@ function getFamilyHistory($pdo) {
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </tbody>
-                    <style>
-                        table {
-                            width: 100%;
-                            border-collapse: collapse;
-                        }
-                        th, td {
-                            border: 1px solid #ddd;
-                            padding: 8px;
-                        }
-                        th {
-                            background-color: #f2f2f2;
-                            text-align: left;
-                        }
-                    </style>
                 </table>
+                
             </div>
+            
         </div>
+        
     </div>
 
     <!-- Include the modals and JavaScript -->
