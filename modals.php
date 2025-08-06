@@ -3,7 +3,7 @@
     <div class="modal-content">
         <span class="close" onclick="closeModal('locationModal')">&times;</span>
         <h3>Add/Edit Location</h3>
-        <form method="POST" action="">
+        <form method="POST" action="<?php echo $_SERVER['PHP_SELF']; ?>">
             <input type="hidden" name="action" value="save_location">
             <div class="form-grid">
                 <div class="form-group">

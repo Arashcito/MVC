@@ -1,4 +1,7 @@
 <?php
+// Start session at the very beginning
+session_start();
+
 // Database configuration
 $host = 'ytc353.encs.concordia.ca';
 $dbname = 'ytc353_1';
@@ -15,14 +18,23 @@ try {
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    error_log("Form submitted: " . print_r($_POST, true));
+    
+    // Simple test to see if any POST data is received
+    if (empty($_POST)) {
+        error_log("POST data is empty!");
+    }
+    
     if (isset($_POST['action'])) {
         $success = false;
         $message = '';
         
         switch ($_POST['action']) {
             case 'save_location':
+                error_log("Processing save_location action");
                 $success = saveLocation($pdo, $_POST);
                 $message = $success ? 'Location saved successfully!' : 'Error saving location.';
+                error_log("Location save result: " . ($success ? 'success' : 'failed'));
                 break;
             case 'save_personnel':
                 $success = savePersonnel($pdo, $_POST);
@@ -63,9 +75,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         // Store message in session for display
-        if (!session_id()) {
-            session_start();
-        }
         $_SESSION['message'] = $message;
         $_SESSION['success'] = $success;
         
@@ -78,6 +87,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Database functions
 function saveLocation($pdo, $data) {
     try {
+        // Debug: Log the received data
+        error_log("Location save data: " . print_r($data, true));
+        
         // Check if we're editing an existing location
         if (isset($data['locationID']) && !empty($data['locationID'])) {
             // UPDATE existing location
@@ -91,6 +103,7 @@ function saveLocation($pdo, $data) {
                 $data['max_capacity'],
                 $data['locationID']
             ]);
+            error_log("Location updated successfully");
         } else {
             // INSERT new location
             $stmt = $pdo->prepare("INSERT INTO Location (name, type, address, postalCode, webAddress, maxCapacity) VALUES (?, ?, ?, ?, ?, ?)");
@@ -102,6 +115,7 @@ function saveLocation($pdo, $data) {
                 $data['web_address'],
                 $data['max_capacity']
             ]);
+            error_log("Location inserted successfully");
         }
         
         return true;
@@ -966,9 +980,6 @@ function saveTeam($pdo, $data) {
 <body>
     <?php
     // Display success/error messages
-    if (!session_id()) {
-        session_start();
-    }
     if (isset($_SESSION['message'])) {
         $messageClass = $_SESSION['success'] ? 'success-message' : 'error-message';
         echo '<div class="' . $messageClass . '">' . htmlspecialchars($_SESSION['message']) . '</div>';
@@ -984,6 +995,25 @@ function saveTeam($pdo, $data) {
                 <button class="btn btn-primary" onclick="showMainSystem()">Main System</button>
                 <button class="btn btn-secondary" onclick="showEmptyTemplate()">Reports</button>
             </div>
+        </div>
+        
+        <!-- Test Form for Debugging -->
+        <div style="background: #f0f0f0; padding: 10px; margin: 10px 0; border: 1px solid #ccc;">
+            <h4>Test Form (Debug)</h4>
+            <form method="POST" action="<?php echo $_SERVER['PHP_SELF']; ?>">
+                <input type="hidden" name="action" value="save_location">
+                <input type="text" name="name" placeholder="Test Location Name" required>
+                <select name="type" required>
+                    <option value="">Select Type</option>
+                    <option value="Head">Head</option>
+                    <option value="Branch">Branch</option>
+                </select>
+                <input type="text" name="address" placeholder="Test Address" required>
+                <input type="text" name="postal_code" placeholder="Test Postal Code" required>
+                <input type="text" name="web_address" placeholder="Test Web Address">
+                <input type="number" name="max_capacity" placeholder="Test Capacity" required>
+                <button type="submit">Test Submit</button>
+            </form>
         </div>
 
         <div class="nav-tabs">
