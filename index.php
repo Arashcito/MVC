@@ -411,10 +411,10 @@ function getPersonnel($pdo) {
 function getFamilyMembers($pdo) {
     try {
         $stmt = $pdo->query("SELECT fm.*, per.firstName, per.lastName, per.dob, per.ssn, per.medicare, 
-                                   per.address, per.postalCode, per.phone, per.email, l.name as location_name 
+                                   per.address, per.postalCode, per.phone, per.email, 
+                                   fm.primarySecondaryRelationship as relationshipType
                             FROM FamilyMember fm 
                             LEFT JOIN Person per ON fm.familyMemID = per.pID 
-                            LEFT JOIN Location l ON fm.familyMemID = l.locationID 
                             ORDER BY per.lastName");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
@@ -1088,6 +1088,7 @@ function saveTeam($pdo, $data) {
                             <th>Type</th>
                             <th>Address</th>
                             <th>Capacity</th>
+                            <th>Web Address</th>
                             <th>General Manager</th>
                             <th>Actions</th>
                         </tr>
@@ -1101,6 +1102,7 @@ function saveTeam($pdo, $data) {
                             echo "<td>" . htmlspecialchars($location['type']) . "</td>";
                             echo "<td>" . htmlspecialchars($location['address']) . "</td>";
                             echo "<td>" . htmlspecialchars($location['maxCapacity']) . "</td>";
+                            echo "<td>" . htmlspecialchars($location['webAddress'] ?? 'N/A') . "</td>";
                             echo "<td>" . htmlspecialchars($location['managerID'] ?? 'N/A') . "</td>";
                             echo "<td class='action-buttons'>";
                             echo "<button class='edit-btn' onclick='editLocation(" . $location['locationID'] . ")'>Edit</button>";
