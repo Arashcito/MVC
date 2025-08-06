@@ -336,6 +336,9 @@ function saveMember($pdo, $data) {
 
 function saveSession($pdo, $data) {
     try {
+        // Debug: Log the received data
+        error_log("Session save data: " . print_r($data, true));
+        
         // Parse score if provided
         $team1Score = null;
         $team2Score = null;

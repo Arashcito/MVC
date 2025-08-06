@@ -431,7 +431,7 @@
     <div class="modal-content">
         <span class="close" onclick="closeModal('sessionModal')">&times;</span>
         <h3>Schedule Session</h3>
-        <form method="POST" action="">
+        <form method="POST" action="<?php echo $_SERVER['PHP_SELF']; ?>">
             <input type="hidden" name="action" value="save_session">
             <div class="form-grid">
                 <div class="form-group">
