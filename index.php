@@ -579,6 +579,9 @@ function savePayment($pdo, $data) {
 
 function saveTeam($pdo, $data) {
     try {
+        // Debug: Log the received data
+        error_log("Team save data: " . print_r($data, true));
+        
         $pdo->beginTransaction();
         
         // Check if we're editing existing team

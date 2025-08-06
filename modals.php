@@ -369,7 +369,7 @@
     <div class="modal-content">
         <span class="close" onclick="closeModal('teamModal')">&times;</span>
         <h3>Create/Edit Team</h3>
-        <form method="POST" action="">
+        <form method="POST" action="<?php echo $_SERVER['PHP_SELF']; ?>">
             <input type="hidden" name="action" value="save_team">
             <div class="form-grid">
                 <div class="form-group">
