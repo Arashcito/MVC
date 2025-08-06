@@ -746,17 +746,45 @@
 
     // Header button functions
     function showMainSystem() {
-        // Hide empty template and show main system
-        document.getElementById('empty-template').style.display = 'none';
-        document.getElementById('locations').style.display = 'block';
+        // Hide empty template
+        const emptyTemplate = document.getElementById('empty-template');
+        if (emptyTemplate) {
+            emptyTemplate.style.display = 'none';
+        }
+        
+        // Show locations section by default
+        const locationsSection = document.getElementById('locations');
+        if (locationsSection) {
+            locationsSection.style.display = 'block';
+        }
         
         // Show the nav tabs
-        document.querySelector('.nav-tabs').style.display = 'flex';
-        document.querySelector('.content').style.display = 'block';
+        const navTabs = document.querySelector('.nav-tabs');
+        if (navTabs) {
+            navTabs.style.display = 'flex';
+        }
+        
+        // Show the content
+        const content = document.querySelector('.content');
+        if (content) {
+            content.style.display = 'block';
+        }
         
         // Update button states
-        document.querySelector('.btn-primary').classList.add('active');
-        document.querySelector('.btn-secondary').classList.remove('active');
+        const mainBtn = document.querySelector('.btn-primary');
+        const reportsBtn = document.querySelector('.btn-secondary');
+        if (mainBtn) mainBtn.classList.add('active');
+        if (reportsBtn) reportsBtn.classList.remove('active');
+        
+        // Reset navigation tab states
+        const navTabButtons = document.querySelectorAll('.nav-tab');
+        navTabButtons.forEach((tab, index) => {
+            if (index === 0) {
+                tab.classList.add('active');
+            } else {
+                tab.classList.remove('active');
+            }
+        });
     }
 
     function showEmptyTemplate() {
@@ -771,12 +799,17 @@
         // Show empty template
         document.getElementById('empty-template').style.display = 'block';
         
-        // Hide the nav tabs
-        document.querySelector('.nav-tabs').style.display = 'none';
+        // Hide the nav tabs completely
+        const navTabs = document.querySelector('.nav-tabs');
+        if (navTabs) {
+            navTabs.style.display = 'none';
+        }
         
         // Update button states
-        document.querySelector('.btn-secondary').classList.add('active');
-        document.querySelector('.btn-primary').classList.remove('active');
+        const reportsBtn = document.querySelector('.btn-secondary');
+        const mainBtn = document.querySelector('.btn-primary');
+        if (reportsBtn) reportsBtn.classList.add('active');
+        if (mainBtn) mainBtn.classList.remove('active');
     }
 
     function generateEmails() {
@@ -1055,5 +1088,66 @@
                 }
             });
         }
+
+        // Handle session filtering
+        const dateFromInput = document.getElementById('dateFrom');
+        const dateToInput = document.getElementById('dateTo');
+        const sessionTypeFilter = document.getElementById('sessionTypeFilter');
+        const locationFilter = document.getElementById('locationFilter');
+        
+        if (dateFromInput && dateToInput) {
+            dateFromInput.addEventListener('change', filterSessions);
+            dateToInput.addEventListener('change', filterSessions);
+        }
+        
+        if (sessionTypeFilter) {
+            sessionTypeFilter.addEventListener('change', filterSessions);
+        }
+        
+        if (locationFilter) {
+            locationFilter.addEventListener('change', filterSessions);
+        }
     });
+
+    // Function to filter sessions by all criteria
+    function filterSessions() {
+        const dateFrom = document.getElementById('dateFrom').value;
+        const dateTo = document.getElementById('dateTo').value;
+        const sessionType = document.getElementById('sessionTypeFilter').value;
+        const location = document.getElementById('locationFilter').value;
+        const rows = document.querySelectorAll('#sessions .data-table tbody tr');
+        
+        rows.forEach(row => {
+            const typeCell = row.cells[0]; // Type column
+            const dateTimeCell = row.cells[1]; // Date & Time column
+            const locationCell = row.cells[2]; // Location column
+            
+            let showRow = true;
+            
+            // Filter by session type
+            if (sessionType && typeCell && typeCell.textContent.toLowerCase() !== sessionType.toLowerCase()) {
+                showRow = false;
+            }
+            
+            // Filter by date range
+            if (dateTimeCell) {
+                const sessionDate = dateTimeCell.textContent.split(' ')[0]; // Extract date part
+                
+                if (dateFrom && sessionDate < dateFrom) {
+                    showRow = false;
+                }
+                
+                if (dateTo && sessionDate > dateTo) {
+                    showRow = false;
+                }
+            }
+            
+            // Filter by location
+            if (location && locationCell && locationCell.textContent.toLowerCase() !== location.toLowerCase()) {
+                showRow = false;
+            }
+            
+            row.style.display = showRow ? '' : 'none';
+        });
+    }
 </script>

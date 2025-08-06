@@ -359,12 +359,14 @@ function getSessions($pdo) {
     try {
         $stmt = $pdo->query("SELECT s.*, t1.teamName as team1_name, t2.teamName as team2_name, 
                              CONCAT(per.firstName, ' ', per.lastName) as coach_name,
-                             CONCAT(s.team1Score, '-', s.team2Score) as score
+                             CONCAT(s.team1Score, '-', s.team2Score) as score,
+                             l.name as location_name
                              FROM Session s 
                              LEFT JOIN Team t1 ON s.team1ID = t1.teamID 
                              LEFT JOIN Team t2 ON s.team2ID = t2.teamID 
                              LEFT JOIN Personnel p ON t1.headCoachID = p.employeeID 
                              LEFT JOIN Person per ON p.employeeID = per.pID 
+                             LEFT JOIN Location l ON s.locationID = l.locationID 
                              ORDER BY s.sessionDate DESC, s.startTime DESC");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
@@ -913,8 +915,6 @@ function saveTeam($pdo, $data) {
             <button class="nav-tab" onclick="showSection('teams')">Teams</button>
             <button class="nav-tab" onclick="showSection('sessions')">Sessions</button>
             <button class="nav-tab" onclick="showSection('payments')">Payments</button>
-            <button class="nav-tab" onclick="showSection('hobbies')">Hobbies</button>
-            <button class="nav-tab" onclick="showSection('workinfo')">Work Info</button>
         </div>
 
         <div class="content">
@@ -1025,7 +1025,6 @@ function saveTeam($pdo, $data) {
                             <th>Phone</th>
                             <th>Email</th>
                             <th>Address</th>
-                            <th>Location</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -1041,7 +1040,6 @@ function saveTeam($pdo, $data) {
                             echo "<td>" . htmlspecialchars($family['phone']) . "</td>";
                             echo "<td>" . htmlspecialchars($family['email']) . "</td>";
                             echo "<td>" . htmlspecialchars($family['address']) . "</td>";
-                            echo "<td>" . htmlspecialchars($family['location_name'] ?? 'N/A') . "</td>";
                             echo "<td class='action-buttons'>";
                             echo "<button class='edit-btn' onclick='editFamily(" . $family['familyMemID'] . ")'>Edit</button>";
                             echo "<button class='delete-btn' onclick='deleteFamily(" . $family['familyMemID'] . ")'>Delete</button>";
@@ -1144,14 +1142,6 @@ function saveTeam($pdo, $data) {
                 </table>
             </div>
 
-
-
-
-
-
-
-
-
             <!-- Sessions Section -->
             <div id="sessions" class="section">
                 <div class="section-header">
@@ -1162,15 +1152,31 @@ function saveTeam($pdo, $data) {
                 <div class="filters">
                     <div class="filter-group">
                         <label>Type:</label>
-                        <select>
+                        <select id="sessionTypeFilter">
                             <option value="">All Types</option>
                             <option value="game">Game</option>
                             <option value="training">Training</option>
                         </select>
                     </div>
                     <div class="filter-group">
-                        <label>Date:</label>
-                        <input type="date">
+                        <label>Location:</label>
+                        <select id="locationFilter">
+                            <option value="">All Locations</option>
+                            <?php
+                            $locations = getLocations($pdo);
+                            foreach ($locations as $location) {
+                                echo "<option value='" . htmlspecialchars($location['name']) . "'>" . htmlspecialchars($location['name']) . "</option>";
+                            }
+                            ?>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Date From:</label>
+                        <input type="date" id="dateFrom">
+                    </div>
+                    <div class="filter-group">
+                        <label>Date To:</label>
+                        <input type="date" id="dateTo">
                     </div>
                 </div>
                 
@@ -1179,7 +1185,7 @@ function saveTeam($pdo, $data) {
                         <tr>
                             <th>Type</th>
                             <th>Date & Time</th>
-                            <th>Address</th>
+                            <th>Location</th>
                             <th>Teams</th>
                             <th>Coach</th>
                             <th>Score</th>
@@ -1208,7 +1214,7 @@ function saveTeam($pdo, $data) {
                                 echo "<tr>";
                                 echo "<td>" . htmlspecialchars($session['sessionType']) . "</td>";
                                 echo "<td>" . htmlspecialchars($session['sessionDate'] . ' ' . $session['startTime']) . "</td>";
-                                echo "<td>" . htmlspecialchars($session['address']) . "</td>";
+                                echo "<td>" . htmlspecialchars($session['location_name'] ?? 'N/A') . "</td>";
                                 echo "<td>" . htmlspecialchars($teams) . "</td>";
                                 echo "<td>" . htmlspecialchars($session['coach_name'] ?? 'N/A') . "</td>";
                                 echo "<td>" . htmlspecialchars($score) . "</td>";
@@ -1314,90 +1320,12 @@ function saveTeam($pdo, $data) {
                 </table>
             </div>
 
-            <!-- Hobbies Section -->
-            <div id="hobbies" class="section">
+            <!-- Empty Template Section for Reports -->
+            <div id="empty-template" class="section" style="display: none;">
                 <div class="section-header">
-                    <h2 class="section-title">Hobby Management</h2>
-                    <div>
-                        <button class="btn" onclick="openModal('hobbyModal')">Add Hobby</button>
-                        <button class="btn btn-secondary" onclick="openModal('memberHobbyModal')">Assign Hobby</button>
-                    </div>
+                    <h2 class="section-title">Reports</h2>
                 </div>
-                
-                <input type="text" class="search-bar" placeholder="Search hobbies...">
-                
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Hobby Name</th>
-                            <th>Members Count</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php
-                        $hobbies = getHobbies($pdo);
-                        if (empty($hobbies)) {
-                            echo "<tr><td colspan='3' style='text-align: center;'>No hobbies found.</td></tr>";
-                        } else {
-                            foreach ($hobbies as $hobby) {
-                                echo "<tr>";
-                                echo "<td>" . htmlspecialchars($hobby['hobbyName']) . "</td>";
-                                echo "<td>N/A</td>";
-                                echo "<td class='action-buttons'>";
-                                echo "<button class='edit-btn' onclick='editHobby(\"" . htmlspecialchars($hobby['hobbyName']) . "\")'>Edit</button>";
-                                echo "<button class='delete-btn' onclick='deleteHobby(\"" . htmlspecialchars($hobby['hobbyName']) . "\")'>Delete</button>";
-                                echo "</td>";
-                                echo "</tr>";
-                            }
-                        }
-                        ?>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Work Info Section -->
-            <div id="workinfo" class="section">
-                <div class="section-header">
-                    <h2 class="section-title">Work Assignment Management</h2>
-                    <button class="btn" onclick="openModal('workInfoModal')">Add Work Assignment</button>
-                </div>
-                
-                <input type="text" class="search-bar" placeholder="Search work assignments...">
-                
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Personnel</th>
-                            <th>Location</th>
-                            <th>Start Date</th>
-                            <th>End Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php
-                        $workInfo = getWorkInfo($pdo);
-                        if (empty($workInfo)) {
-                            echo "<tr><td colspan='5' style='text-align: center;'>No work assignments found.</td></tr>";
-                        } else {
-                            foreach ($workInfo as $work) {
-                                echo "<tr>";
-                                echo "<td>" . htmlspecialchars($work['firstName'] . ' ' . $work['lastName']) . "</td>";
-                                echo "<td>" . htmlspecialchars($work['location_name'] ?? 'N/A') . "</td>";
-                                echo "<td>" . htmlspecialchars($work['startDate']) . "</td>";
-                                echo "<td>" . htmlspecialchars($work['endDate'] ?? 'Ongoing') . "</td>";
-                                echo "<td class='action-buttons'>";
-                                echo "<button class='edit-btn' onclick='editWorkInfo(" . $work['workInfoID'] . ")'>Edit</button>";
-                                echo "<button class='delete-btn' onclick='deleteWorkInfo(" . $work['workInfoID'] . ")'>Delete</button>";
-                                echo "</td>";
-                                echo "</tr>";
-                            }
-                        }
-                        ?>
-                    </tbody>
-                </table>
-            </div>
+            </div>            
         </div>
     </div>
 
