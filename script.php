@@ -1247,4 +1247,72 @@
             }
         });
     }
+
+
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const q17Select = document.getElementById('q17-location');
+        if (!q17Select) {
+            console.warn('q17-location dropdown not found.');
+            return;
+        }
+
+        q17Select.addEventListener('change', function () {
+            const locationID = this.value;
+            const container = document.getElementById('q17-table-container');
+
+            if (!locationID) {
+                container.innerHTML = '';
+                container.style.display = 'none';
+                return;
+            }
+
+            fetch('get_q17.php?locationID=' + encodeURIComponent(locationID))
+                .then(response => response.text())
+                .then(html => {
+                    container.innerHTML = html;
+                    container.style.display = 'block';
+                })
+                .catch(error => {
+                    container.innerHTML = '<p style="color:red;">Error loading data</p>';
+                    container.style.display = 'block';
+                    console.error('Fetch error:', error);
+                });
+        });
+    });
+
+
+    function loadQ18Results() {
+        const container = document.getElementById('q18-table-container');
+        container.innerHTML = '<p>Loading...</p>';
+        container.style.display = 'block';
+
+        fetch('get_q18.php')
+            .then(res => res.text())
+            .then(html => {
+                container.innerHTML = html;
+            })
+            .catch(err => {
+                container.innerHTML = '<p style="color:red;">Failed to load Q18 results.</p>';
+                console.error(err);
+            });
+    }
+
+    function loadQ19Results() {
+        const container = document.getElementById('q19-table-container');
+        container.innerHTML = '<p>Loading...</p>';
+        container.style.display = 'block';
+
+        fetch('get_q19.php')
+            .then(res => res.text())
+            .then(html => {
+                container.innerHTML = html;
+            })
+            .catch(err => {
+                container.innerHTML = '<p style="color:red;">Failed to load Q19 results.</p>';
+                console.error(err);
+            });
+    }
+
 </script>
