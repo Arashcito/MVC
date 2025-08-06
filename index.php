@@ -1,20 +1,51 @@
 <?php
-// Start session at the very beginning
-session_start();
+// Include configuration file for database connection
+require_once 'config.php';
 
-// Database configuration
-$host = 'ytc353.encs.concordia.ca';
-$dbname = 'ytc353_1';
-$username = 'ytc353_1';
-$password = 'Adm1n001';
-$port = 3306;
+// Define constant for included files
+define('DB_CONNECTION_AVAILABLE', true);
 
+// Include payment handler
+require_once 'payment_handler.php';
+
+// Include location info handler
+require_once 'location_info_handler.php';
+
+// Include secondary family handler
+require_once 'secondary_family_handler.php';
+
+// Include minors to majors handler
+require_once 'minors_to_majors_handler.php';
+
+// Include goalkeepers only handler
+require_once 'goalkeepers_only_handler.php';
+
+// Include all-rounder players handler
+require_once 'all_rounder_players_handler.php';
+
+// Get database connection from config
 try {
-    $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8", $username, $password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo = getDBConnection();
 } catch(PDOException $e) {
     die("Connection failed: " . $e->getMessage());
 }
+
+// Initialize variables for secondary family system
+$searchResults = null;
+$familyInfo = null;
+$searchPerformed = false;
+
+// Initialize variables for minors to majors system
+$minorsToMajorsResult = null;
+$availableLocations = null;
+
+// Initialize variables for goalkeepers only system
+$goalkeepersOnlyResult = null;
+$availableGoalkeeperLocations = null;
+
+// Initialize variables for all-rounder players system
+$allRounderPlayersResult = null;
+$allRounderLocations = null;
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -52,6 +83,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $success = savePayment($pdo, $_POST);
                 $message = $success ? 'Payment saved successfully!' : 'Error saving payment.';
                 break;
+            case 'process_payment':
+                $result = processPayment($pdo, $_POST);
+                $success = $result['success'];
+                $message = $result['message'];
+                break;
             case 'save_team':
                 $success = saveTeam($pdo, $_POST);
                 $message = $success ? 'Team saved successfully!' : 'Error saving team.';
@@ -71,6 +107,150 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             case 'save_workinfo':
                 $success = saveWorkInfo($pdo, $_POST);
                 $message = $success ? 'Work info saved successfully!' : 'Error saving work info.';
+                break;
+            case 'export_location_csv':
+                $result = exportLocationInfoCSV($pdo);
+                if ($result['success']) {
+                    // Force download
+                    header('Content-Type: application/csv');
+                    header('Content-Disposition: attachment; filename="' . $result['filename'] . '"');
+                    header('Pragma: no-cache');
+                    header('Expires: 0');
+                    readfile($result['filepath']);
+                    exit();
+                } else {
+                    $success = false;
+                    $message = $result['message'];
+                }
+                break;
+            case 'export_secondary_family_csv':
+                $familyId = isset($_GET['family_id']) ? $_GET['family_id'] : null;
+                $result = exportSecondaryFamilyCSV($pdo, $familyId);
+                if ($result['success']) {
+                    // Force download
+                    header('Content-Type: application/csv');
+                    header('Content-Disposition: attachment; filename="' . $result['filename'] . '"');
+                    header('Pragma: no-cache');
+                    header('Expires: 0');
+                    readfile($result['filepath']);
+                    exit();
+                } else {
+                    $success = false;
+                    $message = $result['message'];
+                }
+                break;
+            case 'search_family':
+                if (!empty($_POST['first_name']) && !empty($_POST['last_name'])) {
+                    $searchResults = searchFamilyMember($pdo, $_POST['first_name'], $_POST['last_name']);
+                    $searchPerformed = true;
+                    $success = $searchResults['success'];
+                    $message = $searchResults['success'] ? 
+                        'Found ' . $searchResults['count'] . ' family member(s)' : 
+                        $searchResults['message'];
+                } else {
+                    $success = false;
+                    $message = 'Please enter both first and last name to search.';
+                }
+                break;
+            case 'get_family_info':
+                error_log("get_family_info action triggered");
+                if (!empty($_POST['family_mem_id'])) {
+                    error_log("Family member ID: " . $_POST['family_mem_id']);
+                    $familyInfo = getSecondaryFamilyInfo($pdo, $_POST['family_mem_id']);
+                    error_log("Family info result: " . print_r($familyInfo, true));
+                    $success = $familyInfo['success'];
+                    $message = $familyInfo['success'] ? 
+                        'Family information loaded successfully' : 
+                        $familyInfo['message'];
+                } else {
+                    error_log("No family member ID provided");
+                    $success = false;
+                    $message = 'Family member ID is required.';
+                }
+                break;
+            case 'filter_minors_majors':
+                $locationFilter = $_POST['location_filter'] ?? 'all';
+                if ($locationFilter && $locationFilter !== 'all') {
+                    $minorsToMajorsResult = getMinorsToMajorsByLocation($pdo, $locationFilter);
+                } else {
+                    $minorsToMajorsResult = getMinorsToMajorsReport($pdo);
+                }
+                $success = $minorsToMajorsResult['success'];
+                $message = $minorsToMajorsResult['success'] ? 
+                    'Report filtered successfully - found ' . count($minorsToMajorsResult['data']) . ' members' : 
+                    $minorsToMajorsResult['message'];
+                break;
+            case 'export_minors_majors_csv':
+                $locationFilter = $_GET['location'] ?? null;
+                $result = exportMinorsToMajorsCSV($pdo, $locationFilter);
+                if ($result['success']) {
+                    // Force download
+                    header('Content-Type: application/csv');
+                    header('Content-Disposition: attachment; filename="' . $result['filename'] . '"');
+                    header('Pragma: no-cache');
+                    header('Expires: 0');
+                    readfile($result['filepath']);
+                    exit();
+                } else {
+                    $success = false;
+                    $message = $result['message'];
+                }
+                break;
+            case 'filter_goalkeepers':
+                $locationFilter = $_POST['location_filter'] ?? 'all';
+                if ($locationFilter && $locationFilter !== 'all') {
+                    $goalkeepersOnlyResult = getGoalkeepersByLocation($pdo, $locationFilter);
+                } else {
+                    $goalkeepersOnlyResult = getGoalkeepersOnlyReport($pdo);
+                }
+                $success = $goalkeepersOnlyResult['success'];
+                $message = $goalkeepersOnlyResult['success'] ? 
+                    'Report filtered successfully - found ' . count($goalkeepersOnlyResult['data']) . ' goalkeepers' : 
+                    $goalkeepersOnlyResult['message'];
+                break;
+            case 'export_goalkeepers_csv':
+                $locationFilter = $_GET['location'] ?? null;
+                $result = exportGoalkeepersOnlyCSV($pdo, $locationFilter);
+                if ($result['success']) {
+                    // Force download
+                    header('Content-Type: application/csv');
+                    header('Content-Disposition: attachment; filename="' . $result['filename'] . '"');
+                    header('Pragma: no-cache');
+                    header('Expires: 0');
+                    readfile($result['filepath']);
+                    exit();
+                } else {
+                    $success = false;
+                    $message = $result['message'];
+                }
+                break;
+            case 'filter_all_rounder_players':
+                $locationFilter = $_POST['location_filter'] ?? 'all';
+                if ($locationFilter && $locationFilter !== 'all') {
+                    $allRounderPlayersResult = getAllRounderPlayersByLocation($pdo, $locationFilter);
+                } else {
+                    $allRounderPlayersResult = getAllRounderPlayersReport($pdo);
+                }
+                $success = $allRounderPlayersResult['success'];
+                $message = $allRounderPlayersResult['success'] ? 
+                    'Report filtered successfully - found ' . count($allRounderPlayersResult['data']) . ' all-rounder players' : 
+                    $allRounderPlayersResult['message'];
+                break;
+            case 'export_all_rounder_players_csv':
+                $locationFilter = $_GET['location'] ?? null;
+                $result = exportAllRounderPlayersCSV($pdo, $locationFilter);
+                if ($result['success']) {
+                    // Force download
+                    header('Content-Type: application/csv');
+                    header('Content-Disposition: attachment; filename="' . $result['filename'] . '"');
+                    header('Pragma: no-cache');
+                    header('Expires: 0');
+                    readfile($result['filepath']);
+                    exit();
+                } else {
+                    $success = false;
+                    $message = $result['message'];
+                }
                 break;
         }
         
@@ -621,6 +801,15 @@ function saveTeam($pdo, $data) {
     }
 }
 
+// Load initial data for all-rounder players system if not already loaded
+if ($allRounderPlayersResult === null) {
+    $allRounderPlayersResult = getAllRounderPlayersReport($pdo);
+}
+if ($allRounderLocations === null) {
+    $locationsResult = getAllRounderLocations($pdo);
+    $allRounderLocations = $locationsResult['success'] ? $locationsResult['data'] : [];
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -1018,13 +1207,6 @@ function saveTeam($pdo, $data) {
                 padding: 40px;
                 color: #6c757d;
                 font-style: italic;
-            }
-
-            .payment-form-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 15px;
-                margin-bottom: 20px;
             }
         }
     </style>
@@ -1468,10 +1650,10 @@ function saveTeam($pdo, $data) {
                 <button class="nav-tab active" onclick="showReportSection('make-payment')">7. Make a Payment</button>
                 <button class="nav-tab" onclick="showReportSection('location-info')">8. Location Info</button>
                 <button class="nav-tab" onclick="showReportSection('secondary-family-info')">9. Secondary Family Info</button>
-                <button class="nav-tab" onclick="showReportSection('question-10')">10. Question</button>
-                <button class="nav-tab" onclick="showReportSection('question-11')">11. Question</button>
-                <button class="nav-tab" onclick="showReportSection('question-12')">12. Question</button>
-                <button class="nav-tab" onclick="showReportSection('question-13')">13. Question</button>
+                <button class="nav-tab" onclick="showReportSection('question-10')">10. Team Formations</button>
+                <button class="nav-tab" onclick="showReportSection('question-11')">11. Inactive Members Report</button>
+                <button class="nav-tab" onclick="showReportSection('question-12')">12. Session Member Counter</button>
+                <button class="nav-tab" onclick="showReportSection('question-13')">13. Unassigned Active Members</button>
                 <button class="nav-tab" onclick="showReportSection('minors-to-majors')">14. Minors to Majors</button>
                 <button class="nav-tab" onclick="showReportSection('goalkeepers-only')">15. Goalkeepers Only</button>
                 <button class="nav-tab" onclick="showReportSection('allrounder-players')">16. All-rounder Players</button>
@@ -1483,301 +1665,1063 @@ function saveTeam($pdo, $data) {
             <!-- Report Sections -->
             
             <!-- 7. Make a Payment -->
-            <div id="make-payment" class="report-section" style="display: block;">
-                <div class="section-header">
-                    <h2 class="section-title">Make a Payment</h2>
-                </div>
-                <div class="report-form">
-                    <form method="POST" action="">
-                        <input type="hidden" name="action" value="save_payment">
-                        <div class="payment-form-grid">
-                            <div class="form-group">
-                                <label>Member:</label>
-                                <select name="member_id" required>
-                                    <option value="">Select Member</option>
-                                    <?php
-                                    $members = getMembers($pdo);
-                                    foreach ($members as $member) {
-                                        echo "<option value='" . $member['memberID'] . "'>" . 
-                                            htmlspecialchars($member['firstName'] . ' ' . $member['lastName']) . "</option>";
-                                    }
-                                    ?>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Amount:</label>
-                                <input type="number" name="amount" step="0.01" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Payment Method:</label>
-                                <select name="payment_method" required>
-                                    <option value="">Select Method</option>
-                                    <option value="cash">Cash</option>
-                                    <option value="credit_card">Credit Card</option>
-                                    <option value="debit_card">Debit Card</option>
-                                    <option value="bank_transfer">Bank Transfer</option>
-                                    <option value="cheque">Cheque</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Payment Date:</label>
-                                <input type="date" name="payment_date" value="<?php echo date('Y-m-d'); ?>" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Membership Year:</label>
-                                <input type="number" name="year" value="<?php echo date('Y'); ?>" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Installment No:</label>
-                                <input type="number" name="installment_no" value="1" min="1" required>
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Process Payment</button>
-                    </form>
-                </div>
-            </div>
+            <?php include 'payment_system.php'; ?>
 
             <!-- 8. Location Info -->
             <div id="location-info" class="report-section">
-                <div class="section-header">
-                    <h2 class="section-title">Location Information Report</h2>
-                </div>
-                <div class="report-form">
-                    <div class="form-group">
-                        <label>Filter by Location Type:</label>
-                        <select id="locationTypeFilter" onchange="filterLocationInfo()">
-                            <option value="">All Types</option>
-                            <option value="main">Main</option>
-                            <option value="secondary">Secondary</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="report-results">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Location Name</th>
-                                <th>Type</th>
-                                <th>Address</th>
-                                <th>Postal Code</th>
-                                <th>Max Capacity</th>
-                                <th>Web Address</th>
-                                <th>General Manager</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php
-                            $locations = getLocations($pdo);
-                            foreach ($locations as $location) {
-                                echo "<tr class='location-row' data-type='" . strtolower($location['type']) . "'>";
-                                echo "<td>" . htmlspecialchars($location['name']) . "</td>";
-                                echo "<td>" . htmlspecialchars($location['type']) . "</td>";
-                                echo "<td>" . htmlspecialchars($location['address']) . "</td>";
-                                echo "<td>" . htmlspecialchars($location['postalCode']) . "</td>";
-                                echo "<td>" . htmlspecialchars($location['maxCapacity']) . "</td>";
-                                echo "<td>" . htmlspecialchars($location['webAddress'] ?: 'N/A') . "</td>";
-                                echo "<td>" . htmlspecialchars($location['managerID'] ?: 'N/A') . "</td>";
-                                echo "</tr>";
-                            }
-                            ?>
-                        </tbody>
-                    </table>
-                </div>
+                <?php include 'location_info_system.php'; ?>
             </div>
 
             <!-- 9. Secondary Family Info -->
             <div id="secondary-family-info" class="report-section">
-                <div class="section-header">
-                    <h2 class="section-title">Secondary Family Information</h2>
-                </div>
-                <div class="report-results">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Family Member Name</th>
-                                <th>Relationship Type</th>
-                                <th>Phone</th>
-                                <th>Email</th>
-                                <th>Address</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php
-                            try {
-                                $stmt = $pdo->query("SELECT fm.*, per.firstName, per.lastName, per.phone, per.email, per.address 
-                                                FROM FamilyMember fm 
-                                                LEFT JOIN Person per ON fm.familyMemID = per.pID 
-                                                WHERE fm.primarySecondaryRelationship = 'secondary'
-                                                ORDER BY per.lastName");
-                                $secondaryFamily = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                                
-                                if (empty($secondaryFamily)) {
-                                    echo "<tr><td colspan='5' style='text-align: center;'>No secondary family members found.</td></tr>";
-                                } else {
-                                    foreach ($secondaryFamily as $family) {
-                                        echo "<tr>";
-                                        echo "<td>" . htmlspecialchars($family['firstName'] . ' ' . $family['lastName']) . "</td>";
-                                        echo "<td>" . htmlspecialchars($family['primarySecondaryRelationship']) . "</td>";
-                                        echo "<td>" . htmlspecialchars($family['phone']) . "</td>";
-                                        echo "<td>" . htmlspecialchars($family['email']) . "</td>";
-                                        echo "<td>" . htmlspecialchars($family['address']) . "</td>";
-                                        echo "</tr>";
-                                    }
-                                }
-                            } catch (PDOException $e) {
-                                echo "<tr><td colspan='5' style='text-align: center; color: red;'>Error loading data.</td></tr>";
-                            }
-                            ?>
-                        </tbody>
-                    </table>
-                </div>
+                <?php include 'secondary_family_system.php'; ?>
             </div>
 
             <!-- 14. Minors to Majors -->
             <div id="minors-to-majors" class="report-section">
-                <div class="section-header">
-                    <h2 class="section-title">Members Transitioning from Minor to Major</h2>
-                </div>
-                <div class="report-results">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Member Name</th>
-                                <th>Date of Birth</th>
-                                <th>Current Age</th>
-                                <th>Transition Date (18th Birthday)</th>
-                                <th>Current Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php
-                            try {
-                                $stmt = $pdo->query("SELECT cm.*, per.firstName, per.lastName, per.dob 
-                                                FROM ClubMember cm 
-                                                LEFT JOIN Person per ON cm.memberID = per.pID 
-                                                WHERE DATEDIFF(CURDATE(), per.dob) / 365.25 BETWEEN 17 AND 18
-                                                ORDER BY per.dob DESC");
-                                $transitionMembers = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                                
-                                if (empty($transitionMembers)) {
-                                    echo "<tr><td colspan='5' style='text-align: center;'>No members currently transitioning from minor to major.</td></tr>";
-                                } else {
-                                    foreach ($transitionMembers as $member) {
-                                        $dob = new DateTime($member['dob']);
-                                        $today = new DateTime();
-                                        $age = $today->diff($dob)->y;
-                                        $eighteenthBirthday = clone $dob;
-                                        $eighteenthBirthday->add(new DateInterval('P18Y'));
-                                        
-                                        echo "<tr>";
-                                        echo "<td>" . htmlspecialchars($member['firstName'] . ' ' . $member['lastName']) . "</td>";
-                                        echo "<td>" . htmlspecialchars($member['dob']) . "</td>";
-                                        echo "<td>" . $age . "</td>";
-                                        echo "<td>" . $eighteenthBirthday->format('Y-m-d') . "</td>";
-                                        echo "<td>" . htmlspecialchars($member['memberType']) . "</td>";
-                                        echo "</tr>";
-                                    }
-                                }
-                            } catch (PDOException $e) {
-                                echo "<tr><td colspan='5' style='text-align: center; color: red;'>Error loading data.</td></tr>";
-                            }
-                            ?>
-                        </tbody>
-                    </table>
-                </div>
+                <?php include 'minors_to_majors_system.php'; ?>
             </div>
 
             <!-- 15. Goalkeepers Only -->
             <div id="goalkeepers-only" class="report-section">
-                <div class="section-header">
-                    <h2 class="section-title">Goalkeepers Report</h2>
-                </div>
-                <div class="coming-soon">
-                    <h4>Goalkeepers Report</h4>
-                    <p>This report will show all members who play as goalkeepers. Position tracking feature coming soon.</p>
-                </div>
+                <?php include 'goalkeepers_only_system.php'; ?>
             </div>
 
             <!-- 16. All-rounder Players -->
             <div id="allrounder-players" class="report-section">
-                <div class="section-header">
-                    <h2 class="section-title">All-rounder Players</h2>
-                </div>
-                <div class="coming-soon">
-                    <h4>All-rounder Players Report</h4>
-                    <p>This report will show players who can play multiple positions. Position tracking feature coming soon.</p>
-                </div>
+                <?php include 'all_rounder_players_system.php'; ?>
             </div>
 
-            <!-- Placeholder sections for other questions -->
-            <div id="question-10" class="report-section">
-                <div class="section-header">
-                    <h2 class="section-title">Question 10</h2>
+           <!---- Yana code-------->
+
+<div id="question-10" class="report-section">
+    <div class="section-header">
+        <h2 class="section-title">Question 10 - Team Formations Report</h2>
+    </div>
+    
+    <div class="report-form">
+        <h4>Get team formation details for a specific location and time period</h4>
+        <p>This report shows head coach details, session information, team names, scores, and player roles for all sessions at a given location within a specified time period.</p>
+        
+        <form id="question10Form" onsubmit="executeQuestion10(event)">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="q10_location">Location:</label>
+                    <select id="q10_location" name="location_id" required>
+                        <option value="">Select Location</option>
+                        <?php
+                        $locations = getLocations($pdo);
+                        foreach ($locations as $location) {
+                            echo "<option value='" . $location['locationID'] . "'>" . 
+                                htmlspecialchars($location['name']) . " - " . htmlspecialchars($location['address']) . "</option>";
+                        }
+                        ?>
+                    </select>
                 </div>
-                <div class="coming-soon">
-                    <h4>Coming Soon</h4>
-                    <p>This report section will be implemented based on specific requirements.</p>
+                
+                <div class="form-group">
+                    <label for="q10_start_date">Start Date:</label>
+                    <input type="date" id="q10_start_date" name="start_date" value="2025-01-01" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="q10_end_date">End Date:</label>
+                    <input type="date" id="q10_end_date" name="end_date" value="2025-05-31" required>
                 </div>
             </div>
+            
+            <button type="submit" class="btn btn-primary">Generate Report</button>
+            <button type="button" class="btn btn-secondary" onclick="clearQuestion10Results()">Clear Results</button>
+        </form>
+    </div>
+    
+    <div id="question10Results" class="report-results" style="display: none;">
+        <h4>Team Formation Details</h4>
+        <div id="question10Summary" class="alert alert-info" style="margin-bottom: 15px;"></div>
+        
+        <table class="data-table" id="question10Table">
+            <thead>
+                <tr>
+                    <th>Team Name</th>
+                    <th>Coach Name</th>
+                    <th>Session Date</th>
+                    <th>Start Time</th>
+                    <th>Address</th>
+                    <th>Session Type</th>
+                    <th>Score</th>
+                    <th>Player Name</th>
+                    <th>Player Role</th>
+                </tr>
+            </thead>
+            <tbody id="question10TableBody">
+                <!-- Results will be populated here -->
+            </tbody>
+        </table>
+    </div>
+    
+    <div id="question10Error" class="alert alert-error" style="display: none;">
+        <!-- Error messages will appear here -->
+    </div>
+</div>
+
+<script>
+function executeQuestion10(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const locationId = formData.get('location_id');
+    const startDate = formData.get('start_date');
+    const endDate = formData.get('end_date');
+    
+    // Validate dates
+    if (new Date(startDate) > new Date(endDate)) {
+        showQuestion10Error('Start date must be before or equal to end date.');
+        return;
+    }
+    
+    // Show loading state
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = 'Generating Report...';
+    submitBtn.disabled = true;
+    
+    // Hide previous results and errors
+    document.getElementById('question10Results').style.display = 'none';
+    document.getElementById('question10Error').style.display = 'none';
+    
+    // Create form data for POST request
+    const postData = new FormData();
+    postData.append('action', 'execute_question_10');
+    postData.append('location_id', locationId);
+    postData.append('start_date', startDate);
+
+
+    
+<div id="question-10" class="report-section">
+    <div class="section-header">
+        <h2 class="section-title">Question 10 - Team Formations Report</h2>
+    </div>
+    
+    <div class="report-form">
+        <h4>Get team formation details for a specific location and time period</h4>
+        <p>This report shows head coach details, session information, team names, scores, and player roles for all sessions at a given location within a specified time period.</p>
+        
+        <form id="question10Form" onsubmit="executeQuestion10(event)">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="q10_location">Location:</label>
+                    <select id="q10_location" name="location_id" required>
+                        <option value="">Select Location</option>
+                        <?php
+                        $locations = getLocations($pdo);
+                        foreach ($locations as $location) {
+                            echo "<option value='" . $location['locationID'] . "'>" . 
+                                htmlspecialchars($location['name']) . " - " . htmlspecialchars($location['address']) . "</option>";
+                        }
+                        ?>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="q10_start_date">Start Date:</label>
+                    <input type="date" id="q10_start_date" name="start_date" value="2025-01-01" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="q10_end_date">End Date:</label>
+                    <input type="date" id="q10_end_date" name="end_date" value="2025-05-31" required>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Generate Report</button>
+            <button type="button" class="btn btn-secondary" onclick="clearQuestion10Results()">Clear Results</button>
+        </form>
+    </div>
+    
+    <div id="question10Results" class="report-results" style="display: none;">
+        <h4>Team Formation Details</h4>
+        <div id="question10Summary" class="alert alert-info" style="margin-bottom: 15px;"></div>
+        
+        <table class="data-table" id="question10Table">
+            <thead>
+                <tr>
+                    <th>Team Name</th>
+                    <th>Coach Name</th>
+                    <th>Session Date</th>
+                    <th>Start Time</th>
+                    <th>Address</th>
+                    <th>Session Type</th>
+                    <th>Score</th>
+                    <th>Player Name</th>
+                    <th>Player Role</th>
+                </tr>
+            </thead>
+            <tbody id="question10TableBody">
+                <!-- Results will be populated here -->
+            </tbody>
+        </table>
+    </div>
+    
+    <div id="question10Error" class="alert alert-error" style="display: none;">
+        <!-- Error messages will appear here -->
+    </div>
+</div>
+
+<script>
+function executeQuestion10(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const locationId = formData.get('location_id');
+    const startDate = formData.get('start_date');
+    const endDate = formData.get('end_date');
+    
+    // Validate dates
+    if (new Date(startDate) > new Date(endDate)) {
+        showQuestion10Error('Start date must be before or equal to end date.');
+        return;
+    }
+    
+    // Show loading state
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = 'Generating Report...';
+    submitBtn.disabled = true;
+    
+    // Hide previous results and errors
+    document.getElementById('question10Results').style.display = 'none';
+    document.getElementById('question10Error').style.display = 'none';
+    
+    // Create form data for POST request
+    const postData = new FormData();
+    postData.append('action', 'execute_question_10');
+    postData.append('location_id', locationId);
+    postData.append('start_date', startDate);
+    postData.append('end_date', endDate);
+    
+    fetch('query_handler.php', {
+        method: 'POST',
+        body: postData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayQuestion10Results(data.results, data.summary);
+        } else {
+            showQuestion10Error(data.message || 'An error occurred while executing the query.');
+        }
+    })
+    .catch(error => {
+        showQuestion10Error('Network error: ' + error.message);
+    })
+    .finally(() => {
+        // Restore button state
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
+function displayQuestion10Results(results, summary) {
+    const resultsDiv = document.getElementById('question10Results');
+    const tableBody = document.getElementById('question10TableBody');
+    const summaryDiv = document.getElementById('question10Summary');
+    
+    // Clear previous results
+    tableBody.innerHTML = '';
+    
+    if (results.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; font-style: italic;">No team formations found for the specified location and time period.</td></tr>';
+    } else {
+        results.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${escapeHtml(row.teamName || 'N/A')}</td>
+                <td>${escapeHtml((row.coachFirstName || '') + ' ' + (row.coachLastName || ''))}</td>
+                <td>${escapeHtml(row.sessionDate || 'N/A')}</td>
+                <td>${escapeHtml(row.startTime || 'N/A')}</td>
+                <td>${escapeHtml(row.address || 'N/A')}</td>
+                <td>${escapeHtml(row.sessionType || 'N/A')}</td>
+                <td>${row.score !== null ? escapeHtml(row.score) : 'TBD'}</td>
+                <td>${escapeHtml((row.playerFirstName || '') + ' ' + (row.playerLastName || ''))}</td>
+                <td>${escapeHtml(row.roleInTeam || 'N/A')}</td>
+            `;
+            tableBody.appendChild(tr);
+        });
+    }
+    
+    // Update summary
+    summaryDiv.textContent = summary || `Found ${results.length} team formation records.`;
+    
+    // Show results
+    resultsDiv.style.display = 'block';
+}
+
+function showQuestion10Error(message) {
+    const errorDiv = document.getElementById('question10Error');
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+}
+
+function clearQuestion10Results() {
+    document.getElementById('question10Results').style.display = 'none';
+    document.getElementById('question10Error').style.display = 'none';
+    document.getElementById('question10Form').reset();
+    
+    // Reset form to default values
+    document.getElementById('q10_start_date').value = '2025-01-01';
+    document.getElementById('q10_end_date').value = '2025-05-31';
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+</script>
+
+<!-- Q10 ENDS HERE -->
+
+<!-- Q11 STARTS HERE -->
 
             <div id="question-11" class="report-section">
+    <div class="section-header">
+        <h2 class="section-title">Question 11 - Inactive Members with Multi-Location History</h2>
+    </div>
+    
+    <div class="report-form">
+        <h4>Get details of inactive club members with multi-location experience</h4>
+        <p>This report shows club members who are currently inactive and have been associated with at least two different locations and are members for at least two years. Results include Club membership number, first name and last name, sorted by membership number.</p>
+        
+        <form id="question11Form" onsubmit="executeQuestion11(event)">
+            <button type="submit" class="btn btn-primary">Generate Report</button>
+            <button type="button" class="btn btn-secondary" onclick="clearQuestion11Results()">Clear Results</button>
+        </form>
+    </div>
+    
+    <div id="question11Results" class="report-results" style="display: none;">
+        <h4>Inactive Members with Multi-Location History</h4>
+        <div id="question11Summary" class="alert alert-info" style="margin-bottom: 15px;"></div>
+        
+        <table class="data-table" id="question11Table">
+            <thead>
+                <tr>
+                    <th>Club Membership Number</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                </tr>
+            </thead>
+            <tbody id="question11TableBody">
+                <!-- Results will be populated here -->
+            </tbody>
+        </table>
+    </div>
+    
+    <div id="question11Error" class="alert alert-error" style="display: none;">
+        <!-- Error messages will appear here -->
+    </div>
+</div>
+
+<script>
+function executeQuestion11(event) {
+    event.preventDefault();
+    
+    // Show loading state
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = 'Generating Report...';
+    submitBtn.disabled = true;
+    
+    // Hide previous results and errors
+    document.getElementById('question11Results').style.display = 'none';
+    document.getElementById('question11Error').style.display = 'none';
+    
+    // Create form data for POST request
+    const postData = new FormData();
+    postData.append('action', 'execute_question_11');
+    
+    fetch('query_handler.php', {
+        method: 'POST',
+        body: postData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayQuestion11Results(data.results, data.summary);
+        } else {
+            showQuestion11Error(data.message || 'An error occurred while executing the query.', data.suggestion);
+        }
+    })
+    .catch(error => {
+        showQuestion11Error('Network error: ' + error.message);
+    })
+    .finally(() => {
+        // Restore button state
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
+function displayQuestion11Results(results, summary) {
+    const resultsDiv = document.getElementById('question11Results');
+    const tableBody = document.getElementById('question11TableBody');
+    const summaryDiv = document.getElementById('question11Summary');
+    
+    // Clear previous results
+    tableBody.innerHTML = '';
+    
+    if (results.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="3" style="text-align: center; font-style: italic;">No inactive members found matching the criteria (at least 2 locations, member for at least 2 years).</td></tr>';
+    } else {
+        results.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${escapeHtml(row.memberNumber || 'N/A')}</td>
+                <td>${escapeHtml(row.firstName || 'N/A')}</td>
+                <td>${escapeHtml(row.lastName || 'N/A')}</td>
+            `;
+            tableBody.appendChild(tr);
+        });
+    }
+    
+    // Update summary
+    summaryDiv.textContent = summary || `Found ${results.length} inactive members with multi-location history.`;
+    
+    // Show results
+    resultsDiv.style.display = 'block';
+}
+
+function showQuestion11Error(message, suggestion) {
+    const errorDiv = document.getElementById('question11Error');
+    let errorContent = message;
+    
+    if (suggestion) {
+        errorContent += '<br><br><strong>Suggestion:</strong> ' + suggestion;
+    }
+    
+    errorDiv.innerHTML = errorContent;
+    errorDiv.style.display = 'block';
+}
+
+function clearQuestion11Results() {
+    document.getElementById('question11Results').style.display = 'none';
+    document.getElementById('question11Error').style.display = 'none';
+}
+
+// Utility function to escape HTML (if not already defined)
+if (typeof escapeHtml === 'undefined') {
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+}
+</script>
+
+<!-- Q11 END HERE!!!! -->
+
+<!-- Q12 STARTS HERE !!! -->
+
+            <!-- Replace the question-12 section in your index.php with this code -->
+
+<div id="question-12" class="report-section">
+    <div class="section-header">
+        <h2 class="section-title">Question 12 - Team Formations Report by Location</h2>
+    </div>
+    
+    <div class="report-form">
+        <h4>Get team formations report for all locations during a specific period</h4>
+        <p>This report shows team formations for all locations within a given time period. For each location, it includes the location name, total training sessions, total training players, total game sessions, and total game players. Results only include locations with at least 4 game sessions, sorted by total game sessions (descending).</p>
+        
+        <form id="question12Form" onsubmit="executeQuestion12(event)">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="q12_start_date">Start Date:</label>
+                    <input type="date" id="q12_start_date" name="start_date" value="2025-01-01" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="q12_end_date">End Date:</label>
+                    <input type="date" id="q12_end_date" name="end_date" value="2025-05-31" required>
+                </div>
+            </div>
+            
+            <div style="margin-top: 15px;">
+                <button type="submit" class="btn btn-primary">Generate Report</button>
+                <button type="button" class="btn btn-secondary" onclick="clearQuestion12Results()">Clear Results</button>
+            </div>
+        </form>
+    </div>
+    
+    <div id="question12Results" class="report-results" style="display: none;">
+        <h4>Team Formations Report by Location</h4>
+        <div id="question12Summary" class="alert alert-info" style="margin-bottom: 15px;"></div>
+        
+        <!-- Summary Statistics -->
+        <div id="question12Stats" class="placeholder-content" style="margin-bottom: 20px;">
+            <div class="placeholder-box">
+                <h4 id="statsLocations">0</h4>
+                <p>Qualifying Locations</p>
+            </div>
+            <div class="placeholder-box">
+                <h4 id="statsGameSessions">0</h4>
+                <p>Total Game Sessions</p>
+            </div>
+            <div class="placeholder-box">
+                <h4 id="statsTrainingSessions">0</h4>
+                <p>Total Training Sessions</p>
+            </div>
+            <div class="placeholder-box">
+                <h4 id="statsGamePlayers">0</h4>
+                <p>Total Game Players</p>
+            </div>
+            <div class="placeholder-box">
+                <h4 id="statsTrainingPlayers">0</h4>
+                <p>Total Training Players</p>
+            </div>
+        </div>
+        
+        <table class="data-table" id="question12Table">
+            <thead>
+                <tr>
+                    <th>Location Name</th>
+                    <th>Training Sessions</th>
+                    <th>Training Players</th>
+                    <th>Game Sessions</th>
+                    <th>Game Players</th>
+                    <th>Total Sessions</th>
+                    <th>Total Players</th>
+                </tr>
+            </thead>
+            <tbody id="question12TableBody">
+                <!-- Results will be populated here -->
+            </tbody>
+        </table>
+    </div>
+    
+    <div id="question12Error" class="alert alert-error" style="display: none;">
+        <!-- Error messages will appear here -->
+    </div>
+</div>
+
+<script>
+function executeQuestion12(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const startDate = formData.get('start_date');
+    const endDate = formData.get('end_date');
+    
+    // Validate dates
+    if (new Date(startDate) > new Date(endDate)) {
+        showQuestion12Error('Start date must be before or equal to end date.');
+        return;
+    }
+    
+    // Show loading state
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = 'Generating Report...';
+    submitBtn.disabled = true;
+    
+    // Hide previous results and errors
+    document.getElementById('question12Results').style.display = 'none';
+    document.getElementById('question12Error').style.display = 'none';
+    
+    // Create form data for POST request
+    const postData = new FormData();
+    postData.append('action', 'execute_question_12');
+    postData.append('start_date', startDate);
+    postData.append('end_date', endDate);
+    
+    fetch('query_handler.php', {
+        method: 'POST',
+        body: postData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayQuestion12Results(data.results, data.summary, data.stats);
+        } else {
+            showQuestion12Error(data.message || 'An error occurred while executing the query.', data.suggestion);
+        }
+    })
+    .catch(error => {
+        showQuestion12Error('Network error: ' + error.message);
+    })
+    .finally(() => {
+        // Restore button state
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
+function displayQuestion12Results(results, summary, stats) {
+    const resultsDiv = document.getElementById('question12Results');
+    const tableBody = document.getElementById('question12TableBody');
+    const summaryDiv = document.getElementById('question12Summary');
+    
+    // Clear previous results
+    tableBody.innerHTML = '';
+    
+    // Update statistics boxes
+    if (stats) {
+        document.getElementById('statsLocations').textContent = stats.totalLocations || 0;
+        document.getElementById('statsGameSessions').textContent = stats.totalGameSessions || 0;
+        document.getElementById('statsTrainingSessions').textContent = stats.totalTrainingSessions || 0;
+        document.getElementById('statsGamePlayers').textContent = stats.totalGamePlayers || 0;
+        document.getElementById('statsTrainingPlayers').textContent = stats.totalTrainingPlayers || 0;
+    }
+    
+    if (results.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; font-style: italic;">No locations found with at least 4 game sessions in the specified period.</td></tr>';
+    } else {
+        results.forEach(row => {
+            const totalSessions = parseInt(row.totalTrainingSessions || 0) + parseInt(row.totalGameSessions || 0);
+            const totalPlayers = parseInt(row.totalTrainingPlayers || 0) + parseInt(row.totalGamePlayers || 0);
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${escapeHtml(row.locationName || 'N/A')}</strong></td>
+                <td>${row.totalTrainingSessions || 0}</td>
+                <td>${row.totalTrainingPlayers || 0}</td>
+                <td><strong>${row.totalGameSessions || 0}</strong></td>
+                <td><strong>${row.totalGamePlayers || 0}</strong></td>
+                <td>${totalSessions}</td>
+                <td>${totalPlayers}</td>
+            `;
+            tableBody.appendChild(tr);
+        });
+    }
+    
+    // Update summary
+    summaryDiv.textContent = summary || `Found ${results.length} locations with team formation data.`;
+    
+    // Show results
+    resultsDiv.style.display = 'block';
+}
+
+function showQuestion12Error(message, suggestion) {
+    const errorDiv = document.getElementById('question12Error');
+    let errorContent = message;
+    
+    if (suggestion) {
+        errorContent += '<br><br><strong>Suggestion:</strong> ' + suggestion;
+    }
+    
+    errorDiv.innerHTML = errorContent;
+    errorDiv.style.display = 'block';
+}
+
+function clearQuestion12Results() {
+    document.getElementById('question12Results').style.display = 'none';
+    document.getElementById('question12Error').style.display = 'none';
+    document.getElementById('question12Form').reset();
+    
+    // Reset form to default values
+    document.getElementById('q12_start_date').value = '2025-01-01';
+    document.getElementById('q12_end_date').value = '2025-05-31';
+    
+    // Reset statistics boxes
+    document.getElementById('statsLocations').textContent = '0';
+    document.getElementById('statsGameSessions').textContent = '0';
+    document.getElementById('statsTrainingSessions').textContent = '0';
+    document.getElementById('statsGamePlayers').textContent = '0';
+    document.getElementById('statsTrainingPlayers').textContent = '0';
+}
+
+// Utility function to escape HTML (if not already defined)
+if (typeof escapeHtml === 'undefined') {
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+}
+</script>
+
+    <!-- Q12 ENDS HERE !!! -->
+
+    <!-- Q13 STARTS HERE !!! -->
+
+            <!-- Replace the question-13 section in your index.php with this code -->
+
+<div id="question-13" class="report-section">
+    <div class="section-header">
+        <h2 class="section-title">Question 13 - Unassigned Active Members</h2>
+    </div>
+    
+    <div class="report-form">
+        <h4>Get report on active club members never assigned to any team formation</h4>
+        <p>This report shows all active club members who have never been assigned to any team session. The list includes membership number, personal details, and current location, sorted by location name then by age.</p>
+        
+        <form id="question13Form" onsubmit="executeQuestion13(event)">
+            <button type="submit" class="btn btn-primary">Generate Report</button>
+            <button type="button" class="btn btn-secondary" onclick="clearQuestion13Results()">Clear Results</button>
+        </form>
+    </div>
+    
+    <div id="question13Results" class="report-results" style="display: none;">
+        <h4>Active Members Never Assigned to Teams</h4>
+        <div id="question13Summary" class="alert alert-info" style="margin-bottom: 15px;"></div>
+        
+        <!-- Summary Statistics -->
+        <div id="question13Stats" class="placeholder-content" style="margin-bottom: 20px;">
+            <div class="placeholder-box">
+                <h4 id="totalUnassignedMembers">0</h4>
+                <p>Unassigned Members</p>
+            </div>
+            <div class="placeholder-box">
+                <h4 id="locationsAffected">0</h4>
+                <p>Locations Affected</p>
+            </div>
+            <div class="placeholder-box">
+                <h4 id="avgAge">0</h4>
+                <p>Average Age</p>
+            </div>
+            <div class="placeholder-box">
+                <h4 id="youngestAge">0</h4>
+                <p>Youngest Member</p>
+            </div>
+            <div class="placeholder-box">
+                <h4 id="oldestAge">0</h4>
+                <p>Oldest Member</p>
+            </div>
+        </div>
+        
+        <!-- Age Distribution -->
+        <div id="ageDistribution" style="margin-bottom: 20px;">
+            <h4>Age Distribution</h4>
+            <div class="placeholder-content">
+                <div class="placeholder-box">
+                    <h4 id="ageUnder18">0</h4>
+                    <p>Under 18</p>
+                </div>
+                <div class="placeholder-box">
+                    <h4 id="age18to25">0</h4>
+                    <p>18-25</p>
+                </div>
+                <div class="placeholder-box">
+                    <h4 id="age26to35">0</h4>
+                    <p>26-35</p>
+                </div>
+                <div class="placeholder-box">
+                    <h4 id="age36to50">0</h4>
+                    <p>36-50</p>
+                </div>
+                <div class="placeholder-box">
+                    <h4 id="ageOver50">0</h4>
+                    <p>Over 50</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Filter Options -->
+        <div class="filters" style="margin-bottom: 15px;">
+            <div class="filter-group">
+                <label>Filter by Location:</label>
+                <select id="locationFilter" onchange="filterQuestion13Results()">
+                    <option value="">All Locations</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Filter by Age Group:</label>
+                <select id="ageGroupFilter" onchange="filterQuestion13Results()">
+                    <option value="">All Ages</option>
+                    <option value="under18">Under 18</option>
+                    <option value="18-25">18-25</option>
+                    <option value="26-35">26-35</option>
+                    <option value="36-50">36-50</option>
+                    <option value="over50">Over 50</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Search by Name:</label>
+                <input type="text" id="nameSearch" placeholder="First or last name..." onkeyup="filterQuestion13Results()">
+            </div>
+        </div>
+        
+        <table class="data-table" id="question13Table">
+            <thead>
+                <tr>
+                    <th>Membership #</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Age</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>Location</th>
+                </tr>
+            </thead>
+            <tbody id="question13TableBody">
+                <!-- Results will be populated here -->
+            </tbody>
+        </table>
+        
+        <div id="filteredCount" style="margin-top: 10px; font-style: italic; color: #666;">
+            <!-- Filtered count will appear here -->
+        </div>
+    </div>
+    
+    <div id="question13Error" class="alert alert-error" style="display: none;">
+        <!-- Error messages will appear here -->
+    </div>
+</div>
+
+<script>
+let question13Data = []; // Store the original data for filtering
+
+function executeQuestion13(event) {
+    event.preventDefault();
+    
+    // Show loading state
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = 'Generating Report...';
+    submitBtn.disabled = true;
+    
+    // Hide previous results and errors
+    document.getElementById('question13Results').style.display = 'none';
+    document.getElementById('question13Error').style.display = 'none';
+    
+    // Create form data for POST request
+    const postData = new FormData();
+    postData.append('action', 'execute_question_13');
+    
+    fetch('query_handler.php', {
+        method: 'POST',
+        body: postData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            question13Data = data.results; // Store for filtering
+            displayQuestion13Results(data.results, data.summary, data.stats);
+        } else {
+            showQuestion13Error(data.message || 'An error occurred while executing the query.', data.suggestion);
+        }
+    })
+    .catch(error => {
+        showQuestion13Error('Network error: ' + error.message);
+    })
+    .finally(() => {
+        // Restore button state
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
+function displayQuestion13Results(results, summary, stats) {
+    const resultsDiv = document.getElementById('question13Results');
+    const summaryDiv = document.getElementById('question13Summary');
+    
+    // Update summary
+    summaryDiv.textContent = summary || `Found ${results.length} unassigned active members.`;
+    
+    // Update statistics
+    if (stats) {
+        document.getElementById('totalUnassignedMembers').textContent = stats.totalMembers || 0;
+        document.getElementById('locationsAffected').textContent = stats.locationsAffected || 0;
+        
+        // Calculate age statistics
+        const ages = results.map(r => parseInt(r.age));
+        const avgAge = ages.length > 0 ? Math.round(ages.reduce((a, b) => a + b, 0) / ages.length) : 0;
+        const youngestAge = ages.length > 0 ? Math.min(...ages) : 0;
+        const oldestAge = ages.length > 0 ? Math.max(...ages) : 0;
+        
+        document.getElementById('avgAge').textContent = avgAge;
+        document.getElementById('youngestAge').textContent = youngestAge;
+        document.getElementById('oldestAge').textContent = oldestAge;
+        
+        // Update age distribution
+        document.getElementById('ageUnder18').textContent = stats.ageGroups['Under 18'] || 0;
+        document.getElementById('age18to25').textContent = stats.ageGroups['18-25'] || 0;
+        document.getElementById('age26to35').textContent = stats.ageGroups['26-35'] || 0;
+        document.getElementById('age36to50').textContent = stats.ageGroups['36-50'] || 0;
+        document.getElementById('ageOver50').textContent = stats.ageGroups['Over 50'] || 0;
+        
+        // Populate location filter
+        const locationFilter = document.getElementById('locationFilter');
+        locationFilter.innerHTML = '<option value="">All Locations</option>';
+        Object.keys(stats.locationCount || {}).sort().forEach(location => {
+            locationFilter.innerHTML += `<option value="${escapeHtml(location)}">${escapeHtml(location)} (${stats.locationCount[location]})</option>`;
+        });
+    }
+    
+    // Display table data
+    updateQuestion13Table(results);
+    
+    // Show results
+    resultsDiv.style.display = 'block';
+}
+
+function updateQuestion13Table(results) {
+    const tableBody = document.getElementById('question13TableBody');
+    const filteredCount = document.getElementById('filteredCount');
+    
+    // Clear previous results
+    tableBody.innerHTML = '';
+    
+    if (results.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; font-style: italic;">No unassigned active members found matching the criteria.</td></tr>';
+        filteredCount.textContent = '';
+    } else {
+        results.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${escapeHtml(row.membershipNumber || 'N/A')}</strong></td>
+                <td>${escapeHtml(row.firstName || 'N/A')}</td>
+                <td>${escapeHtml(row.lastName || 'N/A')}</td>
+                <td>${escapeHtml(row.age || 'N/A')}</td>
+                <td>${escapeHtml(row.phone || 'N/A')}</td>
+                <td>${escapeHtml(row.email || 'N/A')}</td>
+                <td>${escapeHtml(row.locationName || 'N/A')}</td>
+            `;
+            tableBody.appendChild(tr);
+        });
+        
+        // Update filtered count
+        if (results.length < question13Data.length) {
+            filteredCount.textContent = `Showing ${results.length} of ${question13Data.length} members`;
+        } else {
+            filteredCount.textContent = '';
+        }
+    }
+}
+
+function filterQuestion13Results() {
+    const locationFilter = document.getElementById('locationFilter').value;
+    const ageGroupFilter = document.getElementById('ageGroupFilter').value;
+    const nameSearch = document.getElementById('nameSearch').value.toLowerCase();
+    
+    let filteredResults = question13Data.filter(row => {
+        // Location filter
+        if (locationFilter && row.locationName !== locationFilter) {
+            return false;
+        }
+        
+        // Age group filter
+        if (ageGroupFilter) {
+            const age = parseInt(row.age);
+            switch (ageGroupFilter) {
+                case 'under18':
+                    if (age >= 18) return false;
+                    break;
+                case '18-25':
+                    if (age < 18 || age > 25) return false;
+                    break;
+                case '26-35':
+                    if (age < 26 || age > 35) return false;
+                    break;
+                case '36-50':
+                    if (age < 36 || age > 50) return false;
+                    break;
+                case 'over50':
+                    if (age <= 50) return false;
+                    break;
+            }
+        }
+        
+        // Name search
+        if (nameSearch) {
+            const firstName = (row.firstName || '').toLowerCase();
+            const lastName = (row.lastName || '').toLowerCase();
+            const fullName = firstName + ' ' + lastName;
+            if (!firstName.includes(nameSearch) && !lastName.includes(nameSearch) && !fullName.includes(nameSearch)) {
+                return false;
+            }
+        }
+        
+        return true;
+    });
+    
+    updateQuestion13Table(filteredResults);
+}
+
+function showQuestion13Error(message, suggestion) {
+    const errorDiv = document.getElementById('question13Error');
+    let errorContent = message;
+    
+    if (suggestion) {
+        errorContent += '<br><br><strong>Suggestion:</strong> ' + suggestion;
+    }
+    
+    errorDiv.innerHTML = errorContent;
+    errorDiv.style.display = 'block';
+}
+
+function clearQuestion13Results() {
+    document.getElementById('question13Results').style.display = 'none';
+    document.getElementById('question13Error').style.display = 'none';
+    question13Data = [];
+    
+    // Clear filters
+    document.getElementById('locationFilter').value = '';
+    document.getElementById('ageGroupFilter').value = '';
+    document.getElementById('nameSearch').value = '';
+    
+    // Reset statistics
+    document.getElementById('totalUnassignedMembers').textContent = '0';
+    document.getElementById('locationsAffected').textContent = '0';
+    document.getElementById('avgAge').textContent = '0';
+    document.getElementById('youngestAge').textContent = '0';
+    document.getElementById('oldestAge').textContent = '0';
+    
+    // Reset age distribution
+    document.getElementById('ageUnder18').textContent = '0';
+    document.getElementById('age18to25').textContent = '0';
+    document.getElementById('age26to35').textContent = '0';
+    document.getElementById('age36to50').textContent = '0';
+    document.getElementById('ageOver50').textContent = '0';
+}
+
+// Utility function to escape HTML (if not already defined)
+if (typeof escapeHtml === 'undefined') {
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+}
+</script>
+
+
+           <div id="question-17" class="report-section">
                 <div class="section-header">
-                    <h2 class="section-title">Question 11</h2>
+                    <h2 class="section-title">Qualified Family Members (Q17)</h2>
                 </div>
-                <div class="coming-soon">
-                    <h4>Coming Soon</h4>
-                    <p>This report section will be implemented based on specific requirements.</p>
+
+                <div class="report-form">
+                    <label for="q17-location">Select Location:</label>
+                    <select id="q17-location">
+                        <option value="">-- Select Location --</option>
+                        <?php
+                        $locations = getLocations($pdo);
+                        foreach ($locations as $loc) {
+                            echo "<option value='{$loc['locationID']}'>" . htmlspecialchars($loc['name']) . "</option>";
+                        }
+                        ?>
+                    </select>
                 </div>
+
+                <div id="q17-table-container" class="report-results" style="display: none;"></div>
             </div>
 
-            <div id="question-12" class="report-section">
-                <div class="section-header">
-                    <h2 class="section-title">Question 12</h2>
-                </div>
-                <div class="coming-soon">
-                    <h4>Coming Soon</h4>
-                    <p>This report section will be implemented based on specific requirements.</p>
-                </div>
-            </div>
-
-            <div id="question-13" class="report-section">
-                <div class="section-header">
-                    <h2 class="section-title">Question 13</h2>
-                </div>
-                <div class="coming-soon">
-                    <h4>Coming Soon</h4>
-                    <p>This report section will be implemented based on specific requirements.</p>
-                </div>
-            </div>
-
-            <div id="question-17" class="report-section">
-                <div class="section-header">
-                    <h2 class="section-title">Question 17</h2>
-                </div>
-                <div class="coming-soon">
-                    <h4>Coming Soon</h4>
-                    <p>This report section will be implemented based on specific requirements.</p>
-                </div>
-            </div>
 
             <div id="question-18" class="report-section">
                 <div class="section-header">
-                    <h2 class="section-title">Question 18</h2>
+                    <h2 class="section-title">Active Game Winners (Q18)</h2>
+                    <button class="btn" onclick="loadQ18Results()">Load Results</button>
                 </div>
-                <div class="coming-soon">
-                    <h4>Coming Soon</h4>
-                    <p>This report section will be implemented based on specific requirements.</p>
-                </div>
+                <div id="q18-table-container" class="report-results" style="display: none;"></div>
             </div>
+
 
             <div id="question-19" class="report-section">
                 <div class="section-header">
-                    <h2 class="section-title">Question 19</h2>
+                    <h2 class="section-title">Volunteer Family Supervisors (Q19)</h2>
+                    <button class="btn" onclick="loadQ19Results()">Load Results</button>
                 </div>
-                <div class="coming-soon">
-                    <h4>Coming Soon</h4>
-                    <p>This report section will be implemented based on specific requirements.</p>
-                </div>
+                <div id="q19-table-container" class="report-results" style="display: none;"></div>
             </div>
         </div>            
     </div>
