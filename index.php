@@ -996,25 +996,6 @@ function saveTeam($pdo, $data) {
                 <button class="btn btn-secondary" onclick="showEmptyTemplate()">Reports</button>
             </div>
         </div>
-        
-        <!-- Test Form for Debugging -->
-        <div style="background: #f0f0f0; padding: 10px; margin: 10px 0; border: 1px solid #ccc;">
-            <h4>Test Form (Debug)</h4>
-            <form method="POST" action="<?php echo $_SERVER['PHP_SELF']; ?>">
-                <input type="hidden" name="action" value="save_location">
-                <input type="text" name="name" placeholder="Test Location Name" required>
-                <select name="type" required>
-                    <option value="">Select Type</option>
-                    <option value="Head">Head</option>
-                    <option value="Branch">Branch</option>
-                </select>
-                <input type="text" name="address" placeholder="Test Address" required>
-                <input type="text" name="postal_code" placeholder="Test Postal Code" required>
-                <input type="text" name="web_address" placeholder="Test Web Address">
-                <input type="number" name="max_capacity" placeholder="Test Capacity" required>
-                <button type="submit">Test Submit</button>
-            </form>
-        </div>
 
         <div class="nav-tabs">
             <button class="nav-tab active" onclick="showSection('locations')">Locations</button>

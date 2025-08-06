@@ -14,8 +14,8 @@
                     <label>Type:</label>
                     <select name="type" required>
                         <option value="">Select Type</option>
-                        <option value="Head">Head</option>
-                        <option value="Branch">Branch</option>
+                        <option value="HEAD">Head</option>
+                        <option value="BRANCH">Branch</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -24,7 +24,15 @@
                 </div>
                 <div class="form-group">
                     <label>Postal Code:</label>
-                    <input type="text" name="postal_code" required>
+                    <select name="postal_code" required>
+                        <option value="">Select Postal Code</option>
+                        <?php
+                        $postalCodes = $pdo->query("SELECT postalCode FROM PostalAreaInfo ORDER BY postalCode")->fetchAll(PDO::FETCH_ASSOC);
+                        foreach ($postalCodes as $postal) {
+                            echo "<option value='" . htmlspecialchars($postal['postalCode']) . "'>" . htmlspecialchars($postal['postalCode']) . "</option>";
+                        }
+                        ?>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>Web Address:</label>
