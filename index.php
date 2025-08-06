@@ -977,6 +977,52 @@ function saveTeam($pdo, $data) {
                 flex-direction: column;
                 gap: 10px;
             }
+
+            .reports-nav-tabs {
+                display: none;
+                flex-wrap: wrap;
+                gap: 2px;
+                margin-bottom: 20px;
+                border: 1px solid #ddd;
+                background: white;
+            }
+
+            .report-section {
+                display: none;
+                padding: 20px;
+                background: white;
+                border: 1px solid #ddd;
+            }
+
+            .report-section.active {
+                display: block;
+            }
+
+            .report-form {
+                background: #f8f9fa;
+                padding: 20px;
+                border: 1px solid #dee2e6;
+                border-radius: 8px;
+                margin-bottom: 20px;
+            }
+
+            .report-results {
+                margin-top: 20px;
+            }
+
+            .coming-soon {
+                text-align: center;
+                padding: 40px;
+                color: #6c757d;
+                font-style: italic;
+            }
+
+            .payment-form-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 15px;
+                margin-bottom: 20px;
+            }
         }
     </style>
 </head>
@@ -996,11 +1042,11 @@ function saveTeam($pdo, $data) {
             <p>COMP 353 Project</p>
             <div class="header-buttons">
                 <button class="btn btn-primary" onclick="showMainSystem()">Main System</button>
-                <button class="btn btn-secondary" onclick="showEmptyTemplate()">Reports</button>
+                <button class="btn btn-secondary" onclick="showReports()">Reports</button>
             </div>
         </div>
 
-        <div class="nav-tabs">
+        <div class="nav-tabs" id="main-nav-tabs">
             <button class="nav-tab active" onclick="showSection('locations')">Locations</button>
             <button class="nav-tab" onclick="showSection('personnel')">Personnel</button>
             <button class="nav-tab" onclick="showSection('family')">Family</button>
@@ -1413,14 +1459,326 @@ function saveTeam($pdo, $data) {
                 </table>
             </div>
 
-            <!-- Empty Template Section for Reports -->
-            <div id="empty-template" class="section" style="display: none;">
+            <div id="reports-section" class="section" style="display: none;">
+            <!-- Reports Navigation Tabs -->
+            <div id="reports-nav-tabs" class="reports-nav-tabs">
+                <button class="nav-tab active" onclick="showReportSection('make-payment')">7. Make a Payment</button>
+                <button class="nav-tab" onclick="showReportSection('location-info')">8. Location Info</button>
+                <button class="nav-tab" onclick="showReportSection('secondary-family-info')">9. Secondary Family Info</button>
+                <button class="nav-tab" onclick="showReportSection('question-10')">10. Question</button>
+                <button class="nav-tab" onclick="showReportSection('question-11')">11. Question</button>
+                <button class="nav-tab" onclick="showReportSection('question-12')">12. Question</button>
+                <button class="nav-tab" onclick="showReportSection('question-13')">13. Question</button>
+                <button class="nav-tab" onclick="showReportSection('minors-to-majors')">14. Minors to Majors</button>
+                <button class="nav-tab" onclick="showReportSection('goalkeepers-only')">15. Goalkeepers Only</button>
+                <button class="nav-tab" onclick="showReportSection('allrounder-players')">16. All-rounder Players</button>
+                <button class="nav-tab" onclick="showReportSection('question-17')">17. Question</button>
+                <button class="nav-tab" onclick="showReportSection('question-18')">18. Question</button>
+                <button class="nav-tab" onclick="showReportSection('question-19')">19. Question</button>
+            </div>
+
+            <!-- Report Sections -->
+            
+            <!-- 7. Make a Payment -->
+            <div id="make-payment" class="report-section" style="display: block;">
                 <div class="section-header">
-                    <h2 class="section-title">Reports</h2>
+                    <h2 class="section-title">Make a Payment</h2>
                 </div>
-            </div>            
-        </div>
+                <div class="report-form">
+                    <form method="POST" action="">
+                        <input type="hidden" name="action" value="save_payment">
+                        <div class="payment-form-grid">
+                            <div class="form-group">
+                                <label>Member:</label>
+                                <select name="member_id" required>
+                                    <option value="">Select Member</option>
+                                    <?php
+                                    $members = getMembers($pdo);
+                                    foreach ($members as $member) {
+                                        echo "<option value='" . $member['memberID'] . "'>" . 
+                                            htmlspecialchars($member['firstName'] . ' ' . $member['lastName']) . "</option>";
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Amount:</label>
+                                <input type="number" name="amount" step="0.01" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Payment Method:</label>
+                                <select name="payment_method" required>
+                                    <option value="">Select Method</option>
+                                    <option value="cash">Cash</option>
+                                    <option value="credit_card">Credit Card</option>
+                                    <option value="debit_card">Debit Card</option>
+                                    <option value="bank_transfer">Bank Transfer</option>
+                                    <option value="cheque">Cheque</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Payment Date:</label>
+                                <input type="date" name="payment_date" value="<?php echo date('Y-m-d'); ?>" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Membership Year:</label>
+                                <input type="number" name="year" value="<?php echo date('Y'); ?>" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Installment No:</label>
+                                <input type="number" name="installment_no" value="1" min="1" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Process Payment</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 8. Location Info -->
+            <div id="location-info" class="report-section">
+                <div class="section-header">
+                    <h2 class="section-title">Location Information Report</h2>
+                </div>
+                <div class="report-form">
+                    <div class="form-group">
+                        <label>Filter by Location Type:</label>
+                        <select id="locationTypeFilter" onchange="filterLocationInfo()">
+                            <option value="">All Types</option>
+                            <option value="main">Main</option>
+                            <option value="secondary">Secondary</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="report-results">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Location Name</th>
+                                <th>Type</th>
+                                <th>Address</th>
+                                <th>Postal Code</th>
+                                <th>Max Capacity</th>
+                                <th>Web Address</th>
+                                <th>General Manager</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            $locations = getLocations($pdo);
+                            foreach ($locations as $location) {
+                                echo "<tr class='location-row' data-type='" . strtolower($location['type']) . "'>";
+                                echo "<td>" . htmlspecialchars($location['name']) . "</td>";
+                                echo "<td>" . htmlspecialchars($location['type']) . "</td>";
+                                echo "<td>" . htmlspecialchars($location['address']) . "</td>";
+                                echo "<td>" . htmlspecialchars($location['postalCode']) . "</td>";
+                                echo "<td>" . htmlspecialchars($location['maxCapacity']) . "</td>";
+                                echo "<td>" . htmlspecialchars($location['webAddress'] ?: 'N/A') . "</td>";
+                                echo "<td>" . htmlspecialchars($location['managerID'] ?: 'N/A') . "</td>";
+                                echo "</tr>";
+                            }
+                            ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 9. Secondary Family Info -->
+            <div id="secondary-family-info" class="report-section">
+                <div class="section-header">
+                    <h2 class="section-title">Secondary Family Information</h2>
+                </div>
+                <div class="report-results">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Family Member Name</th>
+                                <th>Relationship Type</th>
+                                <th>Phone</th>
+                                <th>Email</th>
+                                <th>Address</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            try {
+                                $stmt = $pdo->query("SELECT fm.*, per.firstName, per.lastName, per.phone, per.email, per.address 
+                                                FROM FamilyMember fm 
+                                                LEFT JOIN Person per ON fm.familyMemID = per.pID 
+                                                WHERE fm.primarySecondaryRelationship = 'secondary'
+                                                ORDER BY per.lastName");
+                                $secondaryFamily = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                                
+                                if (empty($secondaryFamily)) {
+                                    echo "<tr><td colspan='5' style='text-align: center;'>No secondary family members found.</td></tr>";
+                                } else {
+                                    foreach ($secondaryFamily as $family) {
+                                        echo "<tr>";
+                                        echo "<td>" . htmlspecialchars($family['firstName'] . ' ' . $family['lastName']) . "</td>";
+                                        echo "<td>" . htmlspecialchars($family['primarySecondaryRelationship']) . "</td>";
+                                        echo "<td>" . htmlspecialchars($family['phone']) . "</td>";
+                                        echo "<td>" . htmlspecialchars($family['email']) . "</td>";
+                                        echo "<td>" . htmlspecialchars($family['address']) . "</td>";
+                                        echo "</tr>";
+                                    }
+                                }
+                            } catch (PDOException $e) {
+                                echo "<tr><td colspan='5' style='text-align: center; color: red;'>Error loading data.</td></tr>";
+                            }
+                            ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 14. Minors to Majors -->
+            <div id="minors-to-majors" class="report-section">
+                <div class="section-header">
+                    <h2 class="section-title">Members Transitioning from Minor to Major</h2>
+                </div>
+                <div class="report-results">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Member Name</th>
+                                <th>Date of Birth</th>
+                                <th>Current Age</th>
+                                <th>Transition Date (18th Birthday)</th>
+                                <th>Current Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            try {
+                                $stmt = $pdo->query("SELECT cm.*, per.firstName, per.lastName, per.dob 
+                                                FROM ClubMember cm 
+                                                LEFT JOIN Person per ON cm.memberID = per.pID 
+                                                WHERE DATEDIFF(CURDATE(), per.dob) / 365.25 BETWEEN 17 AND 18
+                                                ORDER BY per.dob DESC");
+                                $transitionMembers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                                
+                                if (empty($transitionMembers)) {
+                                    echo "<tr><td colspan='5' style='text-align: center;'>No members currently transitioning from minor to major.</td></tr>";
+                                } else {
+                                    foreach ($transitionMembers as $member) {
+                                        $dob = new DateTime($member['dob']);
+                                        $today = new DateTime();
+                                        $age = $today->diff($dob)->y;
+                                        $eighteenthBirthday = clone $dob;
+                                        $eighteenthBirthday->add(new DateInterval('P18Y'));
+                                        
+                                        echo "<tr>";
+                                        echo "<td>" . htmlspecialchars($member['firstName'] . ' ' . $member['lastName']) . "</td>";
+                                        echo "<td>" . htmlspecialchars($member['dob']) . "</td>";
+                                        echo "<td>" . $age . "</td>";
+                                        echo "<td>" . $eighteenthBirthday->format('Y-m-d') . "</td>";
+                                        echo "<td>" . htmlspecialchars($member['memberType']) . "</td>";
+                                        echo "</tr>";
+                                    }
+                                }
+                            } catch (PDOException $e) {
+                                echo "<tr><td colspan='5' style='text-align: center; color: red;'>Error loading data.</td></tr>";
+                            }
+                            ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 15. Goalkeepers Only -->
+            <div id="goalkeepers-only" class="report-section">
+                <div class="section-header">
+                    <h2 class="section-title">Goalkeepers Report</h2>
+                </div>
+                <div class="coming-soon">
+                    <h4>Goalkeepers Report</h4>
+                    <p>This report will show all members who play as goalkeepers. Position tracking feature coming soon.</p>
+                </div>
+            </div>
+
+            <!-- 16. All-rounder Players -->
+            <div id="allrounder-players" class="report-section">
+                <div class="section-header">
+                    <h2 class="section-title">All-rounder Players</h2>
+                </div>
+                <div class="coming-soon">
+                    <h4>All-rounder Players Report</h4>
+                    <p>This report will show players who can play multiple positions. Position tracking feature coming soon.</p>
+                </div>
+            </div>
+
+            <!-- Placeholder sections for other questions -->
+            <div id="question-10" class="report-section">
+                <div class="section-header">
+                    <h2 class="section-title">Question 10</h2>
+                </div>
+                <div class="coming-soon">
+                    <h4>Coming Soon</h4>
+                    <p>This report section will be implemented based on specific requirements.</p>
+                </div>
+            </div>
+
+            <div id="question-11" class="report-section">
+                <div class="section-header">
+                    <h2 class="section-title">Question 11</h2>
+                </div>
+                <div class="coming-soon">
+                    <h4>Coming Soon</h4>
+                    <p>This report section will be implemented based on specific requirements.</p>
+                </div>
+            </div>
+
+            <div id="question-12" class="report-section">
+                <div class="section-header">
+                    <h2 class="section-title">Question 12</h2>
+                </div>
+                <div class="coming-soon">
+                    <h4>Coming Soon</h4>
+                    <p>This report section will be implemented based on specific requirements.</p>
+                </div>
+            </div>
+
+            <div id="question-13" class="report-section">
+                <div class="section-header">
+                    <h2 class="section-title">Question 13</h2>
+                </div>
+                <div class="coming-soon">
+                    <h4>Coming Soon</h4>
+                    <p>This report section will be implemented based on specific requirements.</p>
+                </div>
+            </div>
+
+            <div id="question-17" class="report-section">
+                <div class="section-header">
+                    <h2 class="section-title">Question 17</h2>
+                </div>
+                <div class="coming-soon">
+                    <h4>Coming Soon</h4>
+                    <p>This report section will be implemented based on specific requirements.</p>
+                </div>
+            </div>
+
+            <div id="question-18" class="report-section">
+                <div class="section-header">
+                    <h2 class="section-title">Question 18</h2>
+                </div>
+                <div class="coming-soon">
+                    <h4>Coming Soon</h4>
+                    <p>This report section will be implemented based on specific requirements.</p>
+                </div>
+            </div>
+
+            <div id="question-19" class="report-section">
+                <div class="section-header">
+                    <h2 class="section-title">Question 19</h2>
+                </div>
+                <div class="coming-soon">
+                    <h4>Coming Soon</h4>
+                    <p>This report section will be implemented based on specific requirements.</p>
+                </div>
+            </div>
+        </div>            
     </div>
+    
 
     <!-- Include the modals and JavaScript -->
     <?php include 'modals.php'; ?>

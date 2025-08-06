@@ -1139,4 +1139,75 @@
             row.style.display = showRow ? '' : 'none';
         });
     }
+
+
+    function showReports() {
+        // Hide main system sections
+        document.querySelectorAll('.section').forEach(section => {
+            section.style.display = 'none';
+        });
+        
+        // Show reports section
+        document.getElementById('reports-section').style.display = 'block';
+        
+        // Update header buttons
+        document.querySelector('.header-buttons .btn-primary').classList.remove('active');
+        document.querySelector('.header-buttons .btn-secondary').classList.add('active');
+        
+        // Show reports nav tabs
+        document.getElementById('main-nav-tabs').style.display = 'none';
+        document.getElementById('reports-nav-tabs').style.display = 'flex';
+        
+        // Show first report tab by default
+        showReportSection('make-payment');
+    }
+
+    function showMainSystem() {
+        // Hide reports section
+        document.getElementById('reports-section').style.display = 'none';
+        
+        // Show main system sections
+        document.getElementById('locations').style.display = 'block';
+        
+        // Update header buttons
+        document.querySelector('.header-buttons .btn-secondary').classList.remove('active');
+        document.querySelector('.header-buttons .btn-primary').classList.add('active');
+        
+        // Show main nav tabs
+        document.getElementById('reports-nav-tabs').style.display = 'none';
+        document.getElementById('main-nav-tabs').style.display = 'flex';
+        
+        // Show first main tab
+        showSection('locations');
+    }
+
+    function showReportSection(sectionId) {
+        // Hide all report sections
+        document.querySelectorAll('.report-section').forEach(section => {
+            section.style.display = 'none';
+        });
+        
+        // Show selected section
+        document.getElementById(sectionId).style.display = 'block';
+        
+        // Update active tab
+        document.querySelectorAll('#reports-nav-tabs .nav-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        event.target.classList.add('active');
+    }
+
+    function filterLocationInfo() {
+        const filter = document.getElementById('locationTypeFilter').value.toLowerCase();
+        const rows = document.querySelectorAll('.location-row');
+        
+        rows.forEach(row => {
+            const type = row.getAttribute('data-type');
+            if (filter === '' || type === filter) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
 </script>
