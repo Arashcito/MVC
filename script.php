@@ -455,10 +455,7 @@
         document.querySelector('input[name="name"]').value = data.name || '';
         document.querySelector('select[name="type"]').value = data.type || '';
         document.querySelector('input[name="address"]').value = data.address || '';
-        document.querySelector('input[name="city"]').value = data.city || '';
-        document.querySelector('input[name="province"]').value = data.province || '';
         document.querySelector('input[name="postal_code"]').value = data.postalCode || '';
-        document.querySelector('input[name="phone"]').value = data.phone || '';
         document.querySelector('input[name="web_address"]').value = data.webAddress || '';
         document.querySelector('input[name="max_capacity"]').value = data.maxCapacity || '';
         
@@ -481,13 +478,10 @@
         document.querySelector('input[name="medicare"]').value = data.medicare || '';
         document.querySelector('input[name="phone"]').value = data.phone || '';
         document.querySelector('input[name="address"]').value = data.address || '';
-        document.querySelector('input[name="city"]').value = data.city || '';
-        document.querySelector('input[name="province"]').value = data.province || '';
         document.querySelector('input[name="postal_code"]').value = data.postalCode || '';
         document.querySelector('input[name="email"]').value = data.email || '';
         document.querySelector('select[name="role"]').value = data.role || '';
         document.querySelector('select[name="mandate"]').value = data.mandate || '';
-        document.querySelector('select[name="location_id"]').value = data.locationID || '';
         
         let hiddenField = document.querySelector('input[name="pID"]');
         if (!hiddenField) {
@@ -502,17 +496,14 @@
     function populateFamilyForm(data) {
         document.querySelector('input[name="first_name"]').value = data.firstName || '';
         document.querySelector('input[name="last_name"]').value = data.lastName || '';
-        document.querySelector('select[name="relationshipType"]').value = data.relationshipType || '';
+        document.querySelector('select[name="relationshipType"]').value = data.primarySecondaryRelationship || '';
         document.querySelector('input[name="dob"]').value = data.dob || '';
         document.querySelector('input[name="ssn"]').value = data.ssn || '';
         document.querySelector('input[name="medicare"]').value = data.medicare || '';
         document.querySelector('input[name="phone"]').value = data.phone || '';
         document.querySelector('input[name="email"]').value = data.email || '';
         document.querySelector('input[name="address"]').value = data.address || '';
-        document.querySelector('input[name="city"]').value = data.city || '';
-        document.querySelector('input[name="province"]').value = data.province || '';
         document.querySelector('input[name="postal_code"]').value = data.postalCode || '';
-        document.querySelector('select[name="location_id"]').value = data.locationID || '';
         
         let hiddenField = document.querySelector('input[name="familyMemID"]');
         if (!hiddenField) {
@@ -528,7 +519,7 @@
         document.querySelector('input[name="first_name"]').value = data.firstName || '';
         document.querySelector('input[name="last_name"]').value = data.lastName || '';
         document.querySelector('input[name="dob"]').value = data.dob || '';
-        document.querySelector('input[name="age"]').value = data.age || '';
+        document.querySelector('input[name="dateJoined"]').value = data.dateJoined || '';
         document.querySelector('input[name="height"]').value = data.height || '';
         document.querySelector('input[name="weight"]').value = data.weight || '';
         document.querySelector('input[name="ssn"]').value = data.ssn || '';
@@ -536,8 +527,6 @@
         document.querySelector('input[name="phone"]').value = data.phone || '';
         document.querySelector('input[name="email"]').value = data.email || '';
         document.querySelector('input[name="address"]').value = data.address || '';
-        document.querySelector('input[name="city"]').value = data.city || '';
-        document.querySelector('input[name="province"]').value = data.province || '';
         document.querySelector('input[name="postal_code"]').value = data.postalCode || '';
         document.querySelector('select[name="location_id"]').value = data.locationID || '';
         document.querySelector('select[name="status"]').value = data.status || 'Active';

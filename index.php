@@ -16,46 +16,62 @@ try {
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
+        $success = false;
+        $message = '';
+        
         switch ($_POST['action']) {
             case 'save_location':
-                saveLocation($pdo, $_POST);
+                $success = saveLocation($pdo, $_POST);
+                $message = $success ? 'Location saved successfully!' : 'Error saving location.';
                 break;
             case 'save_personnel':
-                savePersonnel($pdo, $_POST);
+                $success = savePersonnel($pdo, $_POST);
+                $message = $success ? 'Personnel saved successfully!' : 'Error saving personnel.';
                 break;
             case 'save_family':
-                saveFamily($pdo, $_POST);
+                $success = saveFamily($pdo, $_POST);
+                $message = $success ? 'Family member saved successfully!' : 'Error saving family member.';
                 break;
             case 'save_member':
-                saveMember($pdo, $_POST);
+                $success = saveMember($pdo, $_POST);
+                $message = $success ? 'Member saved successfully!' : 'Error saving member.';
                 break;
             case 'save_payment':
-                savePayment($pdo, $_POST);
+                $success = savePayment($pdo, $_POST);
+                $message = $success ? 'Payment saved successfully!' : 'Error saving payment.';
                 break;
             case 'save_team':
-                saveTeam($pdo, $_POST);
+                $success = saveTeam($pdo, $_POST);
+                $message = $success ? 'Team saved successfully!' : 'Error saving team.';
                 break;
             case 'save_session':
-                saveSession($pdo, $_POST);
+                $success = saveSession($pdo, $_POST);
+                $message = $success ? 'Session saved successfully!' : 'Error saving session.';
                 break;
             case 'save_hobby':
-                saveHobby($pdo, $_POST);
+                $success = saveHobby($pdo, $_POST);
+                $message = $success ? 'Hobby saved successfully!' : 'Error saving hobby.';
                 break;
             case 'save_member_hobby':
-                saveMemberHobby($pdo, $_POST);
+                $success = saveMemberHobby($pdo, $_POST);
+                $message = $success ? 'Member hobby saved successfully!' : 'Error saving member hobby.';
                 break;
             case 'save_workinfo':
-                saveWorkInfo($pdo, $_POST);
+                $success = saveWorkInfo($pdo, $_POST);
+                $message = $success ? 'Work info saved successfully!' : 'Error saving work info.';
                 break;
-
-
-
-
-
-
-
-
         }
+        
+        // Store message in session for display
+        if (!session_id()) {
+            session_start();
+        }
+        $_SESSION['message'] = $message;
+        $_SESSION['success'] = $success;
+        
+        // Redirect to prevent form resubmission
+        header('Location: ' . $_SERVER['PHP_SELF']);
+        exit();
     }
 }
 
@@ -87,8 +103,11 @@ function saveLocation($pdo, $data) {
                 $data['max_capacity']
             ]);
         }
+        
         return true;
+        
     } catch (PDOException $e) {
+        error_log("Location save error: " . $e->getMessage());
         return false;
     }
 }
@@ -757,7 +776,23 @@ function saveTeam($pdo, $data) {
             border-color: #007cba;
         }
 
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+        }
 
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+        }
 
         .data-table {
             width: 100%;
@@ -929,6 +964,18 @@ function saveTeam($pdo, $data) {
     </style>
 </head>
 <body>
+    <?php
+    // Display success/error messages
+    if (!session_id()) {
+        session_start();
+    }
+    if (isset($_SESSION['message'])) {
+        $messageClass = $_SESSION['success'] ? 'success-message' : 'error-message';
+        echo '<div class="' . $messageClass . '">' . htmlspecialchars($_SESSION['message']) . '</div>';
+        unset($_SESSION['message']);
+        unset($_SESSION['success']);
+    }
+    ?>
     <div class="container">
         <div class="header">
             <h1>Montréal Volleyball Club - Management System</h1>
