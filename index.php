@@ -1,9 +1,9 @@
 <?php
 // Database configuration
-$host = 'ytc353.encs.concordia.ca';
-$dbname = 'ytc353_1';
-$username = 'ytc353_1';
-$password = 'Adm1n001';
+$host = '127.0.0.1';
+$dbname = 'mvc_db';
+$username = 'mvc_user';
+$password = 'mvc_pass';
 $port = 3306;
 
 try {
@@ -153,9 +153,9 @@ function savePersonnel($pdo, $data) {
 function saveFamily($pdo, $data) {
     try {
         // Check if we're editing existing family member
-        if (isset($data['familyMemID']) && !empty($data['familyMemID'])) {
+        if (isset($data['familyID']) && !empty($data['familyID'])) {
             // UPDATE existing family member
-            $stmt = $pdo->prepare("UPDATE FamilyMembers SET relationshipType = ?, firstName = ?, lastName = ?, dob = ?, ssn = ?, medicare = ?, phone = ?, address = ?, city = ?, province = ?, postalCode = ?, email = ?, locationID = ? WHERE familyMemID = ?");
+            $stmt = $pdo->prepare("UPDATE FamilyMembers SET relationshipType = ?, firstName = ?, lastName = ?, dob = ?, ssn = ?, medicare = ?, phone = ?, address = ?, city = ?, province = ?, postalCode = ?, email = ?, locationID = ? WHERE familyID = ?");
             $stmt->execute([
                 $data['relationshipType'],
                 $data['first_name'],
@@ -170,7 +170,7 @@ function saveFamily($pdo, $data) {
                 $data['postal_code'],
                 $data['email'],
                 $data['location_id'],
-                $data['familyMemID']
+                $data['familyID']
             ]);
         } else {
             // INSERT new family member
@@ -202,7 +202,7 @@ function saveMember($pdo, $data) {
         // Check if we're editing existing member
         if (isset($data['memberID']) && !empty($data['memberID'])) {
             // UPDATE existing member
-            $stmt = $pdo->prepare("UPDATE ClubMembers SET firstName = ?, lastName = ?, dob = ?, age = ?, height = ?, weight = ?, ssn = ?, medicare = ?, phone = ?, address = ?, email = ?, city = ?, province = ?, postalCode = ?, locationID = ?, familyMemID = ?, status = ? WHERE memberID = ?");
+            $stmt = $pdo->prepare("UPDATE ClubMembers SET firstName = ?, lastName = ?, dob = ?, age = ?, height = ?, weight = ?, ssn = ?, medicare = ?, phone = ?, address = ?, email = ?, city = ?, province = ?, postalCode = ?, locationID = ?, familyID = ?, status = ? WHERE memberID = ?");
             $stmt->execute([
                 $data['first_name'],
                 $data['last_name'],
@@ -225,7 +225,7 @@ function saveMember($pdo, $data) {
             ]);
         } else {
             // INSERT new member
-            $stmt = $pdo->prepare("INSERT INTO ClubMembers (firstName, lastName, dob, age, height, weight, ssn, medicare, phone, address, email, city, province, postalCode, locationID, familyMemID, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt = $pdo->prepare("INSERT INTO ClubMembers (firstName, lastName, dob, age, height, weight, ssn, medicare, phone, address, email, city, province, postalCode, locationID, familyID, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             $stmt->execute([
                 $data['first_name'],
                 $data['last_name'],
@@ -367,7 +367,7 @@ function getPersonnel($pdo) {
 function getFamilyMembers($pdo) {
     $stmt = $pdo->query("SELECT fm.*, p.firstName, p.lastName, p.phone, p.email, p.address 
                         FROM FamilyMember fm 
-                        LEFT JOIN Person p ON fm.familyMemID = p.pID 
+                        LEFT JOIN Person p ON fm.familyID = p.pID 
                         ORDER BY p.lastName");
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
@@ -482,6 +482,89 @@ function getTeamMembers($pdo) {
         return [];
     }
 }
+
+
+
+
+
+
+
+
+
+
+// Q.17
+// function getQualifiedFamilyMembers(PDO $pdo, int $locationID): array {
+//     $stmt = $pdo->prepare("
+//         SELECT DISTINCT p.firstName, p.lastName, p.phone
+//         FROM Person p
+//         JOIN FamilyMember fm ON p.pID = fm.familyID
+//         JOIN FamilyMember fm ON p.pID = fm.familyID
+//         JOIN FamilyHistory fh ON fh.familyID = fm.familyID
+//         JOIN Team t ON t.headCoachID = fm.familyID
+//         WHERE cm.status = 'Active'
+//             AND cm.locationID = :locationID
+//             AND t.locationID = :locationID
+//     ");
+//     $stmt->execute(['locationID' => $locationID]);
+//     return $stmt->fetchAll(PDO::FETCH_ASSOC);
+// }
+
+
+// Q.18
+function getQualifiedFamilyMembers(PDO $pdo): array {
+    $stmt = $pdo->prepare("
+        SELECT cm.memberID, p.firstName, p.lastName, TIMESTAMPDIFF(YEAR, p.dob, CURDATE()) AS age, p.phone, p.email, l.name AS locationName
+        FROM ClubMember cm
+        JOIN Person p ON cm.memberID = p.pID
+        JOIN Location l ON cm.locationID = l.locationID
+        WHERE cm.status = 'Active'
+        AND cm.memberID IN (
+            -- Members who have participated in at least one Game session
+            SELECT DISTINCT sp.participantID
+            FROM SessionParticipation sp
+            JOIN Session s ON sp.sessionID = s.sessionID
+            WHERE s.sessionType = 'Game'
+        )
+        AND cm.memberID NOT IN (
+            -- Members who have ever LOST a game
+            SELECT sp.participantID
+            FROM SessionParticipation sp
+            JOIN Session s ON sp.sessionID = s.sessionID
+            WHERE s.sessionType = 'Game'
+                AND (
+                    (sp.teamID = s.team1ID AND s.team1Score < s.team2Score) OR
+                    (sp.teamID = s.team2ID AND s.team2Score < s.team1Score)
+                )
+        )
+        ORDER BY l.name ASC, cm.memberID ASC;
+    ");
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+
+// Q.19
+// function getQualifiedFamilyMembers(PDO $pdo): array {
+//     $stmt = $pdo->prepare("
+//         SELECT p.firstName, p.lastName, COUNT(DISTINCT cm.memberID) AS minorCount, p.phone, p.email, l.name AS locationName, pl.role
+//         FROM Person p
+//         JOIN Personnel pl ON p.pID = pl.employeeID AND pl.mandate = 'Volunteer'
+//         JOIN FamilyMember fm ON p.pID = fm.familyID
+//         JOIN FamilyHistory fh ON fh.familyID = fm.familyID
+//         JOIN ClubMember cm ON fh.memberID = cm.memberID AND cm.memberType = 'Minor'
+//         JOIN WorkInfo wi ON pl.employeeID = wi.employeeID
+//         JOIN Location l ON wi.locationID = l.locationID
+//         WHERE wi.endDate IS NULL
+//         GROUP BY p.pID, l.name, pl.role
+//         ORDER BY l.name ASC, pl.role ASC, p.firstName ASC, p.lastName ASC
+//     ");
+//     $stmt->execute();
+//     return $stmt->fetchAll(PDO::FETCH_ASSOC);
+// }
+
+
+
+
 
 function saveHobby($pdo, $data) {
     try {
@@ -603,24 +686,24 @@ function saveFamilyHistory($pdo, $data) {
         // Check if we're editing existing family history
         if (isset($data['oldStartDate']) && !empty($data['oldStartDate'])) {
             // UPDATE existing family history
-            $stmt = $pdo->prepare("UPDATE FamilyHistory SET memberID = ?, type = ?, familyMemID = ?, startDate = ?, endDate = ? WHERE memberID = ? AND familyMemID = ? AND startDate = ?");
+            $stmt = $pdo->prepare("UPDATE FamilyHistory SET memberID = ?, type = ?, familyID = ?, startDate = ?, endDate = ? WHERE memberID = ? AND familyID = ? AND startDate = ?");
             $stmt->execute([
                 $data['memberID'],
                 $data['type'],
-                $data['familyMemID'],
+                $data['familyID'],
                 $data['startDate'],
                 $data['endDate'] ?: null,
                 $data['oldMemberID'],
-                $data['oldFamilyMemID'],
+                $data['oldFamilyID'],
                 $data['oldStartDate']
             ]);
         } else {
             // INSERT new family history
-            $stmt = $pdo->prepare("INSERT INTO FamilyHistory (memberID, type, familyMemID, startDate, endDate) VALUES (?, ?, ?, ?, ?)");
+            $stmt = $pdo->prepare("INSERT INTO FamilyHistory (memberID, type, familyID, startDate, endDate) VALUES (?, ?, ?, ?, ?)");
             $stmt->execute([
                 $data['memberID'],
                 $data['type'],
-                $data['familyMemID'],
+                $data['familyID'],
                 $data['startDate'],
                 $data['endDate'] ?: null
             ]);
@@ -680,8 +763,8 @@ function getFamilyHistory($pdo) {
                         FROM FamilyHistory fh 
                         LEFT JOIN ClubMember cm ON fh.memberID = cm.memberID 
                         LEFT JOIN Person m ON cm.memberID = m.pID 
-                        LEFT JOIN FamilyMember fm_rel ON fh.familyMemID = fm_rel.familyMemID 
-                        LEFT JOIN Person fm ON fm_rel.familyMemID = fm.pID 
+                        LEFT JOIN FamilyMember fm_rel ON fh.familyID = fm_rel.familyID 
+                        LEFT JOIN Person fm ON fm_rel.familyID = fm.pID 
                         ORDER BY fh.startDate DESC");
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
@@ -1092,9 +1175,9 @@ function getFamilyHistory($pdo) {
                         foreach ($locations as $location) {
                             echo "<tr>";
                             echo "<td>" . htmlspecialchars($location['name']) . "</td>";
-                            echo "<td>" . htmlspecialchars($location['type']) . "</td>";
-                            echo "<td>" . htmlspecialchars($location['address']) . "</td>";
-                            echo "<td>" . htmlspecialchars($location['maxCapacity']) . "</td>";
+                            echo "<td>" . htmlspecialchars($location['type'] ?? '') . "</td>";
+                            echo "<td>" . htmlspecialchars($location['address'] ?? '') . "</td>";
+                            echo "<td>" . htmlspecialchars($location['maxCapacity'] ?? '') . "</td>";
                             echo "<td>" . htmlspecialchars($location['managerID'] ?? 'N/A') . "</td>";
                             echo "<td class='action-buttons'>";
                             echo "<button class='edit-btn' onclick='editLocation(" . $location['locationID'] . ")'>Edit</button>";
@@ -1135,13 +1218,13 @@ function getFamilyHistory($pdo) {
                             echo "<tr>";
                             echo "<td>" . htmlspecialchars($person['firstName'] . ' ' . $person['lastName']) . "</td>";
                             echo "<td>" . htmlspecialchars($person['ssn']) . "</td>";
-                            echo "<td>" . htmlspecialchars($person['medicare']) . "</td>";
+                            echo "<td>" . htmlspecialchars($person['medicare'] ?? '') . "</td>";
                             echo "<td>" . htmlspecialchars($person['role']) . "</td>";
                             echo "<td>" . htmlspecialchars($person['location_name'] ?? 'N/A') . "</td>";
                             echo "<td>" . htmlspecialchars($person['startDate'] ?? 'N/A') . "</td>";
                             echo "<td class='action-buttons'>";
-                            echo "<button class='edit-btn' onclick='editPersonnel(" . $person['pID'] . ")'>Edit</button>";
-                            echo "<button class='delete-btn' onclick='deletePersonnel(" . $person['pID'] . ")'>Delete</button>";
+                            echo "<button class='edit-btn' onclick='editPersonnel(" . $person['employeeID'] . ")'>Edit</button>";
+                            echo "<button class='delete-btn' onclick='deletePersonnel(" . $person['employeeID'] . ")'>Delete</button>";
                             echo "</td>";
                             echo "</tr>";
                         }
@@ -1176,13 +1259,13 @@ function getFamilyHistory($pdo) {
                         foreach ($familyMembers as $family) {
                             echo "<tr>";
                             echo "<td>" . htmlspecialchars($family['firstName'] . ' ' . $family['lastName']) . "</td>";
-                            echo "<td>" . htmlspecialchars($family['relationshipType']) . "</td>";
+                            echo "<td>" . htmlspecialchars($family['relationshipType'] ?? '') . "</td>";
                             echo "<td>" . htmlspecialchars($family['phone']) . "</td>";
                             echo "<td>" . htmlspecialchars($family['email']) . "</td>";
                             echo "<td>" . htmlspecialchars($family['address']) . "</td>";
                             echo "<td class='action-buttons'>";
-                            echo "<button class='edit-btn' onclick='editFamily(" . $family['familyMemID'] . ")'>Edit</button>";
-                            echo "<button class='delete-btn' onclick='deleteFamily(" . $family['familyMemID'] . ")'>Delete</button>";
+                            echo "<button class='edit-btn' onclick='editFamily(" . $family['familyID'] . ")'>Edit</button>";
+                            echo "<button class='delete-btn' onclick='deleteFamily(" . $family['familyID'] . ")'>Delete</button>";
                             echo "</td>";
                             echo "</tr>";
                         }
@@ -1357,8 +1440,8 @@ function getFamilyHistory($pdo) {
                         $teams = getTeams($pdo);
                         foreach ($teams as $team) {
                             echo "<tr>";
-                            echo "<td>" . htmlspecialchars($team['teamName']) . "</td>";
-                            echo "<td>" . htmlspecialchars($team['teamType']) . "</td>";
+                            echo "<td>" . htmlspecialchars($team['teamName'] ?? '') . "</td>";
+                            echo "<td>" . htmlspecialchars($team['teamType'] ?? '') . "</td>";
                             echo "<td>N/A</td>";
                             echo "<td>" . htmlspecialchars($team['location_name'] ?? 'N/A') . "</td>";
                             echo "<td>0</td>"; // TODO: Count team players
@@ -1741,12 +1824,12 @@ function getFamilyHistory($pdo) {
                             echo "<tr>";
                             echo "<td>" . htmlspecialchars($fh['member_name']) . "</td>";
                             echo "<td>" . htmlspecialchars($fh['family_member_name']) . "</td>";
-                            echo "<td>" . htmlspecialchars($fh['type']) . "</td>";
+                            echo "<td>" . htmlspecialchars($fh['type'] ?? '') . "</td>";
                             echo "<td>" . htmlspecialchars($fh['startDate']) . "</td>";
                             echo "<td>" . htmlspecialchars($fh['endDate'] ?? 'Ongoing') . "</td>";
                             echo "<td class='action-buttons'>";
-                            echo "<button class='edit-btn' onclick='editFamilyHistory(" . $fh['memberID'] . ", " . $fh['familyMemID'] . ", \"" . $fh['startDate'] . "\")'>Edit</button>";
-                            echo "<button class='delete-btn' onclick='deleteFamilyHistory(" . $fh['memberID'] . ", " . $fh['familyMemID'] . ", \"" . $fh['startDate'] . "\")'>Delete</button>";
+                            echo "<button class='edit-btn' onclick='editFamilyHistory(" . $fh['memberID'] . ", " . $fh['familyID'] . ", \"" . $fh['startDate'] . "\")'>Edit</button>";
+                            echo "<button class='delete-btn' onclick='deleteFamilyHistory(" . $fh['memberID'] . ", " . $fh['familyID'] . ", \"" . $fh['startDate'] . "\")'>Delete</button>";
                             echo "</td>";
                             echo "</tr>";
                         }
@@ -1796,9 +1879,9 @@ function getFamilyHistory($pdo) {
                         } else {
                             foreach ($teamMembers as $tm) {
                                 echo "<tr>";
-                                echo "<td>" . htmlspecialchars($tm['teamName']) . "</td>";
+                                echo "<td>" . htmlspecialchars($tm['teamName'] ?? '') . "</td>";
                                 echo "<td>" . htmlspecialchars($tm['member_name']) . "</td>";
-                                echo "<td>" . htmlspecialchars($tm['roleInTeam']) . "</td>";
+                                echo "<td>" . htmlspecialchars($tm['roleInTeam'] ?? '') . "</td>";
                                 echo "<td class='action-buttons'>";
                                 echo "<button class='edit-btn' onclick='editTeamMember(" . $tm['teamID'] . ", " . $tm['memberID'] . ", \"" . htmlspecialchars($tm['roleInTeam']) . "\")'>Edit</button>";
                                 echo "<button class='delete-btn' onclick='deleteTeamMember(" . $tm['teamID'] . ", " . $tm['memberID'] . ")'>Delete</button>";
@@ -1811,17 +1894,88 @@ function getFamilyHistory($pdo) {
                 </table>
             </div>
 
+
+
             <!-- Question Section -->
-            <div id="empty-template" class="section">
-                <div class="section-header">
-                    <h2 class="section-title">Empty Template</h2>
-                    <p>This is an empty template for future development.</p>
-                </div>
-                
-                <div class="content">
-                    <h3>Welcome to the Empty Template</h3>
-                    <p>This section is currently empty and ready for new features to be added.</p>
-                </div>
+            <div class="section-header">
+                <h2 class="section-title">Questions Jarred</h2>
+            </div>
+
+            <div class="content">
+                <?php
+                // Get location list for dropdown
+                $locationQuery = $pdo->query("SELECT locationID, name FROM Location");
+                $locations = $locationQuery->fetchAll(PDO::FETCH_ASSOC);
+
+                // Get selected locationID from GET, default to first in list
+                $selectedLocationID = $_GET['locationID'] ?? ($locations[0]['locationID'] ?? null);
+                ?>
+
+                <form method="GET" style="margin-bottom: 20px;">
+                    <label for="locationID"><strong>Select Location:</strong></label>
+                    <select name="locationID" id="locationID" onchange="this.form.submit()">
+                        <?php foreach ($locations as $loc): ?>
+                            <option value="<?= $loc['locationID'] ?>" <?= $loc['locationID'] == $selectedLocationID ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($loc['name']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <noscript><button type="submit">Submit</button></noscript>
+                </form>
+
+                <?php
+                // Query based on selected location
+                if ($selectedLocationID) {
+                    $results = getQualifiedFamilyMembers($pdo, $selectedLocationID);
+                }
+                ?>
+
+                <h3>Qualified Family Members (Head Coaches + Active Members)</h3>
+                <table>
+                <thead>
+                    <tr>
+                        <th>First Name</th>
+                        <th>Last Name</th>
+                        <th>Phone</th>
+                        <th>Email</th>
+                        <th>Location</th>
+                        <th>Role</th>
+                        <th># of Minor Members</th>
+                    </tr>
+                </thead>
+
+                    <tbody>
+                        <?php if (empty($results)): ?>
+                            <tr><td colspan="3">No results found for this location.</td></tr>
+                        <?php else: ?>
+                            <?php foreach ($results as $row): ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($row['firstName']) ?></td>
+                                    <td><?= htmlspecialchars($row['lastName']) ?></td>
+                                    <td><?= htmlspecialchars($row['phone']) ?></td>
+                                    <td><?= htmlspecialchars($row['email']) ?></td>
+                                    <td><?= htmlspecialchars($row['locationName']) ?></td>
+                                    <td><?= htmlspecialchars($row['role']) ?></td>
+                                    <td><?= htmlspecialchars($row['minorCount']) ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                    <style>
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                        }
+                        th, td {
+                            border: 1px solid #ddd;
+                            padding: 8px;
+                        }
+                        th {
+                            background-color: #f2f2f2;
+                            text-align: left;
+                        }
+                    </style>
+                </table>
             </div>
         </div>
     </div>

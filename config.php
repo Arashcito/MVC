@@ -1,9 +1,9 @@
 <?php
 // Database configuration for Concordia Server
-$host = 'ytc353.encs.concordia.ca';
-$dbname = 'ytc353_1';
-$username = 'ytc353_1';
-$password = 'Adm1n001';
+$host = '127.0.0.1';
+$dbname = 'mvc_db';
+$username = 'mvc_user';
+$password = 'mvc_pass';
 $port = 3306;
 
 // Application configuration
