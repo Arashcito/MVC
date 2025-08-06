@@ -160,7 +160,7 @@ function deleteMember($pdo, $id) {
 
 function deletePayment($pdo, $id) {
     try {
-        $stmt = $pdo->prepare("DELETE FROM Payment WHERE memberID = ?");
+        $stmt = $pdo->prepare("DELETE FROM Payment WHERE paymentID = ?");
         $stmt->execute([$id]);
         return ['success' => true, 'message' => 'Payment deleted successfully'];
     } catch (PDOException $e) {
@@ -365,7 +365,7 @@ function getMemberById($pdo, $id) {
 
 function getPaymentById($pdo, $id) {
     try {
-        $stmt = $pdo->prepare("SELECT * FROM Payment WHERE memberID = ?");
+        $stmt = $pdo->prepare("SELECT * FROM Payment WHERE paymentID = ?");
         $stmt->execute([$id]);
         $payment = $stmt->fetch(PDO::FETCH_ASSOC);
         return ['success' => true, 'data' => $payment];
@@ -431,20 +431,26 @@ function performSearch($pdo, $section, $query) {
                 $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 break;
             case 'personnel':
-                $stmt = $pdo->prepare("SELECT * FROM Personnel 
-                                      WHERE firstName LIKE ? OR lastName LIKE ? OR email LIKE ?");
+                $stmt = $pdo->prepare("SELECT p.*, per.firstName, per.lastName, per.email 
+                                      FROM Personnel p 
+                                      LEFT JOIN Person per ON p.employeeID = per.pID 
+                                      WHERE per.firstName LIKE ? OR per.lastName LIKE ? OR per.email LIKE ?");
                 $stmt->execute([$query, $query, $query]);
                 $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 break;
             case 'family':
-                $stmt = $pdo->prepare("SELECT * FROM FamilyMembers 
-                                      WHERE firstName LIKE ? OR lastName LIKE ? OR email LIKE ?");
+                $stmt = $pdo->prepare("SELECT fm.*, per.firstName, per.lastName, per.email 
+                                      FROM FamilyMember fm 
+                                      LEFT JOIN Person per ON fm.familyMemID = per.pID 
+                                      WHERE per.firstName LIKE ? OR per.lastName LIKE ? OR per.email LIKE ?");
                 $stmt->execute([$query, $query, $query]);
                 $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 break;
             case 'members':
-                $stmt = $pdo->prepare("SELECT * FROM ClubMembers 
-                                      WHERE firstName LIKE ? OR lastName LIKE ?");
+                $stmt = $pdo->prepare("SELECT cm.*, per.firstName, per.lastName 
+                                      FROM ClubMember cm 
+                                      LEFT JOIN Person per ON cm.memberID = per.pID 
+                                      WHERE per.firstName LIKE ? OR per.lastName LIKE ?");
                 $stmt->execute([$query, $query]);
                 $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 break;
@@ -468,7 +474,7 @@ function generateReport($pdo, $reportType, $locationFilter = '') {
                 $sql = "SELECT COUNT(*) as total_members, 
                         SUM(CASE WHEN cm.age < 18 THEN 1 ELSE 0 END) as minors,
                         SUM(CASE WHEN cm.age >= 18 THEN 1 ELSE 0 END) as adults
-                        FROM ClubMembers cm 
+                        FROM ClubMember cm 
                         LEFT JOIN Location l ON cm.locationID = l.locationID 
                         $locationWhere";
                 $stmt = $pdo->prepare($sql);
@@ -479,7 +485,7 @@ function generateReport($pdo, $reportType, $locationFilter = '') {
             case 'locations':
                 $sql = "SELECT l.name, l.maxCapacity, COUNT(cm.memberID) as member_count
                         FROM Location l 
-                        LEFT JOIN ClubMembers cm ON l.locationID = cm.locationID 
+                        LEFT JOIN ClubMember cm ON l.locationID = cm.locationID 
                         $locationWhere
                         GROUP BY l.locationID";
                 $stmt = $pdo->prepare($sql);
@@ -488,8 +494,9 @@ function generateReport($pdo, $reportType, $locationFilter = '') {
                 break;
                 
             case 'inactive':
-                $sql = "SELECT cm.firstName, cm.lastName, cm.dob, l.name as location_name
-                        FROM ClubMembers cm 
+                $sql = "SELECT per.firstName, per.lastName, cm.dob, l.name as location_name
+                        FROM ClubMember cm 
+                        LEFT JOIN Person per ON cm.memberID = per.pID 
                         LEFT JOIN Location l ON cm.locationID = l.locationID 
                         WHERE cm.status = 'Inactive' OR cm.status IS NULL
                         $locationWhere";

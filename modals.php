@@ -23,20 +23,8 @@
                     <input type="text" name="address" required>
                 </div>
                 <div class="form-group">
-                    <label>City:</label>
-                    <input type="text" name="city" required>
-                </div>
-                <div class="form-group">
-                    <label>Province:</label>
-                    <input type="text" name="province" required>
-                </div>
-                <div class="form-group">
                     <label>Postal Code:</label>
                     <input type="text" name="postal_code" required>
-                </div>
-                <div class="form-group">
-                    <label>Phone Number:</label>
-                    <input type="tel" name="phone" required>
                 </div>
                 <div class="form-group">
                     <label>Web Address:</label>
@@ -101,14 +89,10 @@
                     <label>Role:</label>
                     <select name="role" required>
                         <option value="">Select Role</option>
-                        <option value="General Manager">General Manager</option>
-                        <option value="Deputy Manager">Deputy Manager</option>
-                        <option value="Treasurer">Treasurer</option>
-                        <option value="Secretary">Secretary</option>
                         <option value="Administrator">Administrator</option>
                         <option value="Captain">Captain</option>
                         <option value="Coach">Coach</option>
-                        <option value="Assistant Coach">Assistant Coach</option>
+                        <option value="AssistantCoach">Assistant Coach</option>
                         <option value="Other">Other</option>
                     </select>
                 </div>
@@ -118,18 +102,6 @@
                         <option value="">Select Mandate</option>
                         <option value="Volunteer">Volunteer</option>
                         <option value="Salaried">Salaried</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Location:</label>
-                    <select name="location_id">
-                        <option value="">Select Location</option>
-                        <?php
-                        $locations = getLocations($pdo);
-                        foreach ($locations as $location) {
-                            echo "<option value='" . $location['locationID'] . "'>" . htmlspecialchars($location['name']) . "</option>";
-                        }
-                        ?>
                     </select>
                 </div>
             </div>
@@ -155,10 +127,9 @@
                         <option value="Mother">Mother</option>
                         <option value="Grandfather">Grandfather</option>
                         <option value="Grandmother">Grandmother</option>
-                        <option value="Tutor">Tutor</option>
-                        <option value="Partner">Partner</option>
                         <option value="Friend">Friend</option>
-                        <option value="Other">Other</option>
+                        <option value="cousin">Cousin</option>
+                        <option value="other">Other</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -197,17 +168,6 @@
                     <label>Email Address:</label>
                     <input type="email" name="email" required>
                 </div>
-                <div class="form-group">
-                    <label>Location:</label>
-                    <select name="location_id" required>
-                        <option value="">Select Location</option>
-                        <?php
-                        foreach ($locations as $location) {
-                            echo "<option value='" . $location['locationID'] . "'>" . htmlspecialchars($location['name']) . "</option>";
-                        }
-                        ?>
-                    </select>
-                </div>
             </div>
             <button type="submit" class="btn">Save Family Member</button>
             <button type="button" class="btn btn-secondary" onclick="closeModal('familyModal')">Cancel</button>
@@ -236,8 +196,8 @@
                     <input type="date" name="dob" required>
                 </div>
                 <div class="form-group">
-                    <label>Age:</label>
-                    <input type="number" name="age" required>
+                    <label>Date Joined:</label>
+                    <input type="date" name="dateJoined" required>
                 </div>
                 <div class="form-group">
                     <label>Height (cm):</label>
@@ -396,8 +356,8 @@
                     <label>Gender:</label>
                     <select name="gender" required>
                         <option value="">Select Gender</option>
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -454,8 +414,8 @@
                     <label>Session Type:</label>
                     <select name="type" required>
                         <option value="">Select Type</option>
-                        <option value="game">Game</option>
-                        <option value="training">Training</option>
+                        <option value="Game">Game</option>
+                        <option value="Training">Training</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -467,8 +427,16 @@
                     <input type="time" name="time" required>
                 </div>
                 <div class="form-group">
-                    <label>Address:</label>
-                    <input type="text" name="address" required placeholder="Enter venue address">
+                    <label>Location:</label>
+                    <select name="location_id" required>
+                        <option value="">Select Location</option>
+                        <?php
+                        $locations = getLocations($pdo);
+                        foreach ($locations as $location) {
+                            echo "<option value='" . $location['locationID'] . "'>" . htmlspecialchars($location['name']) . "</option>";
+                        }
+                        ?>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>Team 1:</label>

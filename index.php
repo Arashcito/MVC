@@ -65,30 +65,24 @@ function saveLocation($pdo, $data) {
         // Check if we're editing an existing location
         if (isset($data['locationID']) && !empty($data['locationID'])) {
             // UPDATE existing location
-            $stmt = $pdo->prepare("UPDATE Location SET name = ?, type = ?, address = ?, city = ?, province = ?, postalCode = ?, phone = ?, webAddress = ?, maxCapacity = ? WHERE locationID = ?");
+            $stmt = $pdo->prepare("UPDATE Location SET name = ?, type = ?, address = ?, postalCode = ?, webAddress = ?, maxCapacity = ? WHERE locationID = ?");
             $stmt->execute([
                 $data['name'],
                 $data['type'],
                 $data['address'],
-                $data['city'],
-                $data['province'],
                 $data['postal_code'],
-                $data['phone'],
                 $data['web_address'],
                 $data['max_capacity'],
                 $data['locationID']
             ]);
         } else {
             // INSERT new location
-            $stmt = $pdo->prepare("INSERT INTO Location (name, type, address, city, province, postalCode, phone, webAddress, maxCapacity) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt = $pdo->prepare("INSERT INTO Location (name, type, address, postalCode, webAddress, maxCapacity) VALUES (?, ?, ?, ?, ?, ?)");
             $stmt->execute([
                 $data['name'],
                 $data['type'],
                 $data['address'],
-                $data['city'],
-                $data['province'],
                 $data['postal_code'],
-                $data['phone'],
                 $data['web_address'],
                 $data['max_capacity']
             ]);
@@ -163,94 +157,138 @@ function savePersonnel($pdo, $data) {
 
 function saveFamily($pdo, $data) {
     try {
+        $pdo->beginTransaction();
+        
         // Check if we're editing existing family member
         if (isset($data['familyMemID']) && !empty($data['familyMemID'])) {
-            // UPDATE existing family member
-            $stmt = $pdo->prepare("UPDATE FamilyMember SET relationshipType = ?, firstName = ?, lastName = ?, dob = ?, ssn = ?, medicare = ?, phone = ?, address = ?, postalCode = ?, email = ?, locationID = ? WHERE familyMemID = ?");
+            // UPDATE existing person
+            $stmt = $pdo->prepare("UPDATE Person SET firstName = ?, lastName = ?, dob = ?, ssn = ?, medicare = ?, address = ?, postalCode = ?, phone = ?, email = ? WHERE pID = ?");
             $stmt->execute([
-                $data['relationshipType'],
                 $data['first_name'],
                 $data['last_name'],
                 $data['dob'],
                 $data['ssn'],
                 $data['medicare'],
-                $data['phone'],
                 $data['address'],
                 $data['postal_code'],
+                $data['phone'],
                 $data['email'],
-                $data['location_id'],
+                $data['familyMemID']
+            ]);
+            
+            // UPDATE existing family member
+            $stmt = $pdo->prepare("UPDATE FamilyMember SET primarySecondaryRelationship = ? WHERE familyMemID = ?");
+            $stmt->execute([
+                $data['relationshipType'],
                 $data['familyMemID']
             ]);
         } else {
-            // INSERT new family member
-            $stmt = $pdo->prepare("INSERT INTO FamilyMember (relationshipType, firstName, lastName, dob, ssn, medicare, phone, address, postalCode, email, locationID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            // INSERT new person
+            $stmt = $pdo->prepare("INSERT INTO Person (firstName, lastName, dob, ssn, medicare, address, postalCode, phone, email) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
             $stmt->execute([
-                $data['relationshipType'],
                 $data['first_name'],
                 $data['last_name'],
                 $data['dob'],
                 $data['ssn'],
                 $data['medicare'],
-                $data['phone'],
                 $data['address'],
                 $data['postal_code'],
-                $data['email'],
-                $data['location_id']
+                $data['phone'],
+                $data['email']
+            ]);
+            
+            $personID = $pdo->lastInsertId();
+            
+            // INSERT new family member
+            $stmt = $pdo->prepare("INSERT INTO FamilyMember (familyMemID, primarySecondaryRelationship) VALUES (?, ?)");
+            $stmt->execute([
+                $personID,
+                $data['relationshipType']
             ]);
         }
+        
+        $pdo->commit();
         return true;
     } catch (PDOException $e) {
+        $pdo->rollBack();
         return false;
     }
 }
 
 function saveMember($pdo, $data) {
     try {
+        $pdo->beginTransaction();
+        
+        // Calculate member type based on age from DOB
+        $dob = new DateTime($data['dob']);
+        $today = new DateTime();
+        $age = $today->diff($dob)->y;
+        $memberType = ($age < 18) ? 'Minor' : 'Major';
+        
         // Check if we're editing existing member
         if (isset($data['memberID']) && !empty($data['memberID'])) {
-            // UPDATE existing member
-            $stmt = $pdo->prepare("UPDATE ClubMember SET firstName = ?, lastName = ?, dob = ?, age = ?, height = ?, weight = ?, ssn = ?, medicare = ?, phone = ?, address = ?, email = ?, postalCode = ?, locationID = ?, familyMemID = ?, status = ? WHERE memberID = ?");
+            // UPDATE existing person
+            $stmt = $pdo->prepare("UPDATE Person SET firstName = ?, lastName = ?, dob = ?, ssn = ?, medicare = ?, address = ?, postalCode = ?, phone = ?, email = ? WHERE pID = ?");
             $stmt->execute([
                 $data['first_name'],
                 $data['last_name'],
                 $data['dob'],
-                $data['age'],
-                $data['height'],
-                $data['weight'],
                 $data['ssn'],
                 $data['medicare'],
-                $data['phone'],
                 $data['address'],
-                $data['email'],
                 $data['postal_code'],
+                $data['phone'],
+                $data['email'],
+                $data['memberID']
+            ]);
+            
+            // UPDATE existing member
+            $stmt = $pdo->prepare("UPDATE ClubMember SET locationID = ?, memberType = ?, status = ?, height = ?, weight = ?, dateJoined = ?, familyMemID = ? WHERE memberID = ?");
+            $stmt->execute([
                 $data['location_id'],
-                $data['family_member_id'] ?: null,
+                $memberType,
                 $data['status'] ?? 'Active',
+                $data['height'],
+                $data['weight'],
+                $data['dateJoined'] ?? date('Y-m-d'),
+                $data['family_member_id'] ?: null,
                 $data['memberID']
             ]);
         } else {
-            // INSERT new member
-            $stmt = $pdo->prepare("INSERT INTO ClubMember (firstName, lastName, dob, age, height, weight, ssn, medicare, phone, address, email, postalCode, locationID, familyMemID, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            // INSERT new person
+            $stmt = $pdo->prepare("INSERT INTO Person (firstName, lastName, dob, ssn, medicare, address, postalCode, phone, email) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
             $stmt->execute([
                 $data['first_name'],
                 $data['last_name'],
                 $data['dob'],
-                $data['age'],
-                $data['height'],
-                $data['weight'],
                 $data['ssn'],
                 $data['medicare'],
-                $data['phone'],
                 $data['address'],
-                $data['email'],
                 $data['postal_code'],
+                $data['phone'],
+                $data['email']
+            ]);
+            
+            $personID = $pdo->lastInsertId();
+            
+            // INSERT new member
+            $stmt = $pdo->prepare("INSERT INTO ClubMember (memberID, locationID, memberType, status, height, weight, dateJoined, familyMemID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([
+                $personID,
                 $data['location_id'],
-                $data['family_member_id'] ?: null,
-                $data['status'] ?? 'Active'
+                $memberType,
+                $data['status'] ?? 'Active',
+                $data['height'],
+                $data['weight'],
+                $data['dateJoined'] ?? date('Y-m-d'),
+                $data['family_member_id'] ?: null
             ]);
         }
+        
+        $pdo->commit();
         return true;
     } catch (PDOException $e) {
+        $pdo->rollBack();
         return false;
     }
 }
@@ -273,12 +311,12 @@ function saveSession($pdo, $data) {
         // Check if we're editing existing session
         if (isset($data['sessionID']) && !empty($data['sessionID'])) {
             // UPDATE existing session
-            $stmt = $pdo->prepare("UPDATE Session SET sessionType = ?, sessionDate = ?, startTime = ?, address = ?, team1ID = ?, team2ID = ?, team1Score = ?, team2Score = ? WHERE sessionID = ?");
+            $stmt = $pdo->prepare("UPDATE Session SET sessionType = ?, sessionDate = ?, startTime = ?, locationID = ?, team1ID = ?, team2ID = ?, team1Score = ?, team2Score = ? WHERE sessionID = ?");
             $stmt->execute([
                 $data['type'],
                 $data['date'],
                 $data['time'],
-                $data['address'] ?? '',
+                $data['location_id'] ?? null,
                 $data['team1_id'],
                 $data['team2_id'] ?: null,
                 $team1Score,
@@ -287,12 +325,12 @@ function saveSession($pdo, $data) {
             ]);
         } else {
             // INSERT new session
-            $stmt = $pdo->prepare("INSERT INTO Session (sessionType, sessionDate, startTime, address, team1ID, team2ID, team1Score, team2Score) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt = $pdo->prepare("INSERT INTO Session (sessionType, sessionDate, startTime, locationID, team1ID, team2ID, team1Score, team2Score) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
             $stmt->execute([
                 $data['type'],
                 $data['date'],
                 $data['time'],
-                $data['address'] ?? '',
+                $data['location_id'] ?? null,
                 $data['team1_id'],
                 $data['team2_id'] ?: null,
                 $team1Score,
