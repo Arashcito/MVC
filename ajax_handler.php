@@ -2,16 +2,11 @@
 // AJAX Handler for delete and edit operations
 header('Content-Type: application/json');
 
-// Database configuration
-$host = 'ytc353.encs.concordia.ca';
-$dbname = 'ytc353_1';
-$username = 'ytc353_1';
-$password = 'Adm1n001';
-$port = 3306;
+// Include configuration file for database connection
+require_once 'config.php';
 
 try {
-    $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8", $username, $password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo = getDBConnection();
 } catch(PDOException $e) {
     echo json_encode(['success' => false, 'message' => 'Database connection failed']);
     exit;
