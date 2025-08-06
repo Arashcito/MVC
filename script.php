@@ -129,36 +129,54 @@
     }
 
     function editPayment(id) {
+        console.log('editPayment called with ID:', id);
         fetch('ajax_handler.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: 'action=get_payment&id=' + id
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
         .then(data => {
+            console.log('Response data:', data);
             if (data.success) {
                 populatePaymentForm(data.data);
                 openModal('paymentModal');
             } else {
                 alert('Error: ' + data.message);
             }
+        })
+        .catch(error => {
+            console.error('Error in editPayment:', error);
+            alert('Error: ' + error.message);
         });
     }
 
     function editTeam(id) {
+        console.log('editTeam called with ID:', id);
         fetch('ajax_handler.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: 'action=get_team&id=' + id
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
         .then(data => {
+            console.log('Response data:', data);
             if (data.success) {
                 populateTeamForm(data.data);
                 openModal('teamModal');
             } else {
                 alert('Error: ' + data.message);
             }
+        })
+        .catch(error => {
+            console.error('Error in editTeam:', error);
+            alert('Error: ' + error.message);
         });
     }
 
@@ -496,7 +514,7 @@
         document.querySelector('input[name="medicare"]').value = data.medicare || '';
         document.querySelector('input[name="phone"]').value = data.phone || '';
         document.querySelector('input[name="address"]').value = data.address || '';
-        document.querySelector('input[name="postal_code"]').value = data.postalCode || '';
+        document.querySelector('select[name="postal_code"]').value = data.postalCode || '';
         document.querySelector('input[name="email"]').value = data.email || '';
         document.querySelector('select[name="role"]').value = data.role || '';
         document.querySelector('select[name="mandate"]').value = data.mandate || '';
@@ -521,7 +539,7 @@
         document.querySelector('input[name="phone"]').value = data.phone || '';
         document.querySelector('input[name="email"]').value = data.email || '';
         document.querySelector('input[name="address"]').value = data.address || '';
-        document.querySelector('input[name="postal_code"]').value = data.postalCode || '';
+        document.querySelector('select[name="postal_code"]').value = data.postalCode || '';
         
         let hiddenField = document.querySelector('input[name="familyMemID"]');
         if (!hiddenField) {
@@ -545,7 +563,7 @@
         document.querySelector('input[name="phone"]').value = data.phone || '';
         document.querySelector('input[name="email"]').value = data.email || '';
         document.querySelector('input[name="address"]').value = data.address || '';
-        document.querySelector('input[name="postal_code"]').value = data.postalCode || '';
+        document.querySelector('select[name="postal_code"]').value = data.postalCode || '';
         document.querySelector('select[name="location_id"]').value = data.locationID || '';
         document.querySelector('select[name="status"]').value = data.status || 'Active';
         document.querySelector('select[name="family_member_id"]').value = data.familyMemID || '';
@@ -566,6 +584,7 @@
         document.querySelector('select[name="payment_method"]').value = data.method || '';
         document.querySelector('input[name="payment_date"]').value = data.paymentDate || '';
         document.querySelector('select[name="year"]').value = data.membershipYear || '';
+        document.querySelector('input[name="installment_no"]').value = data.installmentNo || '1';
         
         // Add hidden field for paymentID when editing
         let hiddenField = document.querySelector('input[name="paymentID"]');
@@ -598,7 +617,7 @@
         document.querySelector('select[name="type"]').value = data.sessionType || '';
         document.querySelector('input[name="date"]').value = data.sessionDate || '';
         document.querySelector('input[name="time"]').value = data.startTime || '';
-        document.querySelector('input[name="address"]').value = data.address || '';
+        document.querySelector('select[name="location_id"]').value = data.locationID || '';
         document.querySelector('select[name="team1_id"]').value = data.team1ID || '';
         document.querySelector('select[name="team2_id"]').value = data.team2ID || '';
         
