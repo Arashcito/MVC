@@ -193,6 +193,9 @@ function savePersonnel($pdo, $data) {
 
 function saveFamily($pdo, $data) {
     try {
+        // Debug: Log the received data
+        error_log("Family save data: " . print_r($data, true));
+        
         $pdo->beginTransaction();
         
         // Check if we're editing existing family member
