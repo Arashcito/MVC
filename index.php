@@ -128,6 +128,7 @@ function saveLocation($pdo, $data) {
 
 function savePersonnel($pdo, $data) {
     try {
+        error_log("Personnel save data: " . print_r($data, true));
         $pdo->beginTransaction();
         
         // Check if we're editing existing personnel
