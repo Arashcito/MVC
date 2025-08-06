@@ -25,19 +25,28 @@
 
     // Edit functions
     function editLocation(id) {
+        console.log('editLocation called with ID:', id);
         fetch('ajax_handler.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: 'action=get_location&id=' + id
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
         .then(data => {
+            console.log('Response data:', data);
             if (data.success) {
                 populateLocationForm(data.data);
                 openModal('locationModal');
             } else {
                 alert('Error: ' + data.message);
             }
+        })
+        .catch(error => {
+            console.error('Error in editLocation:', error);
+            alert('Error: ' + error.message);
         });
     }
 
@@ -218,20 +227,29 @@
 
     // Delete functions
     function deleteLocation(id) {
+        console.log('deleteLocation called with ID:', id);
         if (confirm('Are you sure you want to delete this location?')) {
             fetch('ajax_handler.php', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                 body: 'action=delete_location&id=' + id
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
             .then(data => {
+                console.log('Response data:', data);
                 if (data.success) {
                     alert('Location deleted successfully');
                     location.reload();
                 } else {
                     alert('Error: ' + data.message);
                 }
+            })
+            .catch(error => {
+                console.error('Error in deleteLocation:', error);
+                alert('Error: ' + error.message);
             });
         }
     }
@@ -455,7 +473,7 @@
         document.querySelector('input[name="name"]').value = data.name || '';
         document.querySelector('select[name="type"]').value = data.type || '';
         document.querySelector('input[name="address"]').value = data.address || '';
-        document.querySelector('input[name="postal_code"]').value = data.postalCode || '';
+        document.querySelector('select[name="postal_code"]').value = data.postalCode || '';
         document.querySelector('input[name="web_address"]').value = data.webAddress || '';
         document.querySelector('input[name="max_capacity"]').value = data.maxCapacity || '';
         
