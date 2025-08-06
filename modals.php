@@ -132,7 +132,7 @@
     <div class="modal-content">
         <span class="close" onclick="closeModal('familyModal')">&times;</span>
         <h3>Add/Edit Family Member</h3>
-        <form method="POST" action="<?php echo $_SERVER['PHP_SELF']; ?>">
+        <form method="POST" action="">
             <input type="hidden" name="action" value="save_family">
             <div class="form-grid">
                 <div class="form-group">
@@ -178,15 +178,7 @@
                 </div>
                 <div class="form-group">
                     <label>Postal Code:</label>
-                    <select name="postal_code" required>
-                        <option value="">Select Postal Code</option>
-                        <?php
-                        $postalCodes = $pdo->query("SELECT postalCode FROM PostalAreaInfo ORDER BY postalCode")->fetchAll(PDO::FETCH_ASSOC);
-                        foreach ($postalCodes as $postal) {
-                            echo "<option value='" . htmlspecialchars($postal['postalCode']) . "'>" . htmlspecialchars($postal['postalCode']) . "</option>";
-                        }
-                        ?>
-                    </select>
+                    <input type="text" name="postal_code" required>
                 </div>
                 <div class="form-group">
                     <label>Email Address:</label>
@@ -204,7 +196,7 @@
     <div class="modal-content">
         <span class="close" onclick="closeModal('memberModal')">&times;</span>
         <h3>Add/Edit Member</h3>
-        <form method="POST" action="<?php echo $_SERVER['PHP_SELF']; ?>">
+        <form method="POST" action="">
             <input type="hidden" name="action" value="save_member">
             <div class="form-grid">
                 <div class="form-group">
@@ -264,15 +256,7 @@
                 </div>
                 <div class="form-group">
                     <label>Postal Code:</label>
-                    <select name="postal_code" required>
-                        <option value="">Select Postal Code</option>
-                        <?php
-                        $postalCodes = $pdo->query("SELECT postalCode FROM PostalAreaInfo ORDER BY postalCode")->fetchAll(PDO::FETCH_ASSOC);
-                        foreach ($postalCodes as $postal) {
-                            echo "<option value='" . htmlspecialchars($postal['postalCode']) . "'>" . htmlspecialchars($postal['postalCode']) . "</option>";
-                        }
-                        ?>
-                    </select>
+                    <input type="text" name="postal_code" required>
                 </div>
                 <div class="form-group">
                     <label>Status:</label>
@@ -321,7 +305,7 @@
     <div class="modal-content">
         <span class="close" onclick="closeModal('paymentModal')">&times;</span>
         <h3>Record Payment</h3>
-        <form method="POST" action="<?php echo $_SERVER['PHP_SELF']; ?>">
+        <form method="POST" action="">
             <input type="hidden" name="action" value="save_payment">
             <div class="form-grid">
                 <div class="form-group">
@@ -377,7 +361,7 @@
     <div class="modal-content">
         <span class="close" onclick="closeModal('teamModal')">&times;</span>
         <h3>Create/Edit Team</h3>
-        <form method="POST" action="<?php echo $_SERVER['PHP_SELF']; ?>">
+        <form method="POST" action="">
             <input type="hidden" name="action" value="save_team">
             <div class="form-grid">
                 <div class="form-group">
@@ -439,7 +423,7 @@
     <div class="modal-content">
         <span class="close" onclick="closeModal('sessionModal')">&times;</span>
         <h3>Schedule Session</h3>
-        <form method="POST" action="<?php echo $_SERVER['PHP_SELF']; ?>">
+        <form method="POST" action="">
             <input type="hidden" name="action" value="save_session">
             <div class="form-grid">
                 <div class="form-group">
